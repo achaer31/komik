@@ -21,20 +21,19 @@ type QrisResponse = {
   xenditPaymentId: string;
 };
 
-const paymentMethods = [
-  "BCA",
-  "Mandiri",
-  "BRI",
-  "BNI",
-  "BSI",
-  "CIMB",
-  "SeaBank",
-  "Jago",
-  "GoPay",
-  "DANA",
-  "OVO",
-  "ShopeePay",
-  "LinkAja",
+const qrisApps = [
+  ["BCA", "BCA Mobile / myBCA"],
+  ["Livin'", "Mandiri Livin'"],
+  ["BRImo", "BRI BRImo"],
+  ["BNI", "BNI Mobile"],
+  ["BSI", "BSI Mobile"],
+  ["DANA", "DANA"],
+  ["GoPay", "GoPay"],
+  ["OVO", "OVO"],
+  ["ShopeePay", "ShopeePay"],
+  ["LinkAja", "LinkAja"],
+  ["Jago", "Bank Jago"],
+  ["SeaBank", "SeaBank"],
 ];
 
 export function CheckoutSheet({
@@ -312,23 +311,37 @@ export function CheckoutSheet({
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-              <p className="text-sm font-black text-white">
-                Bisa bayar pakai aplikasi ini:
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {paymentMethods.map((method) => (
-                  <span
-                    className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-black text-white/82"
-                    key={method}
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-sm font-black text-white">
+                    QRIS bisa dibayar dari aplikasi ini
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-white/58">
+                    Ini bukan pilihan dummy. Setelah klik tombol kuning, QRIS
+                    asli akan dibuat dan bisa discan dari app berikut.
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-[#16091d]">
+                  Real QRIS
+                </span>
+              </div>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                {qrisApps.map(([label, description]) => (
+                  <div
+                    className="rounded-2xl border border-white/10 bg-black/22 p-3"
+                    key={label}
                   >
-                    {method}
-                  </span>
+                    <p className="text-sm font-black text-white">{label}</p>
+                    <p className="mt-1 text-[11px] font-bold leading-4 text-white/52">
+                      {description}
+                    </p>
+                  </div>
                 ))}
               </div>
-              <p className="mt-3 text-xs leading-5 text-white/58">
-                Pilih menu Scan QRIS di aplikasi bank/e-wallet kamu. Tidak perlu
-                transfer manual dan tidak perlu kirim bukti bayar.
-              </p>
+              <div className="mt-3 rounded-2xl border border-[#ffd166]/25 bg-[#ffd166]/10 p-3 text-xs font-bold leading-5 text-[#ffe2a0]">
+                Caranya: klik buat QRIS, buka aplikasi bank/e-wallet, pilih
+                Scan QRIS, lalu scan atau upload gambar QRIS dari galeri.
+              </div>
             </div>
 
             <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-50">

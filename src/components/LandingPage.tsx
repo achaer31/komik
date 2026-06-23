@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { trackMetaEvent } from "@/lib/meta-client";
 
@@ -603,37 +603,130 @@ function PreviewCarousel({
   previews: string[];
   onSelect: (index: number) => void;
 }) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const activeIndexRef = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused || previews.length < 2) return;
+
+    const interval = window.setInterval(() => {
+      const rail = railRef.current;
+      const firstItem = rail?.querySelector("button");
+      const itemWidth =
+        firstItem instanceof HTMLElement ? firstItem.offsetWidth + 12 : 150;
+      const nextIndex = (activeIndexRef.current + 1) % previews.length;
+
+      activeIndexRef.current = nextIndex;
+      setActiveIndex(nextIndex);
+      rail?.scrollTo({
+        behavior: "smooth",
+        left: nextIndex * itemWidth,
+      });
+    }, 2300);
+
+    return () => window.clearInterval(interval);
+  }, [paused, previews.length]);
+
   return (
     <section className="px-4 pt-8">
-      <div className="rounded-[28px] border border-pink-400/30 bg-[#140a17] p-5">
-        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
-          Preview pilihan komik
-        </p>
-        <h2 className="mt-2 text-2xl font-black">
-          Klik Untuk Lihat Contoh Halamannya
-        </h2>
-        <p className="mt-3 text-base leading-7 text-white/75">
-          Ini beberapa contoh halaman agar kamu kebayang rasa koleksinya sebelum
-          checkout.
-        </p>
-        <div className="-mx-5 mt-5 flex snap-x gap-3 overflow-x-auto px-5 pb-2">
+      <div className="relative overflow-hidden rounded-[28px] border border-pink-400/35 bg-[radial-gradient(circle_at_top,rgba(255,47,147,0.22),#140a17_48%,#09040c)] p-5 shadow-[0_0_38px_rgba(255,47,147,0.18)]">
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#ffd166] to-transparent" />
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+              Preview pilihan komik
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              Klik Untuk Lihat Contoh Halamannya
+            </h2>
+            <p className="mt-3 text-base leading-7 text-white/75">
+              Carousel ini jalan otomatis. Tap salah satu preview untuk lihat
+              halaman lebih besar.
+            </p>
+          </div>
+          <div className="shrink-0 rounded-full border border-[#ffd166]/40 bg-[#ffd166]/12 px-3 py-2 text-center">
+            <p className="text-lg font-black text-[#ffd166]">{previews.length}</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/58">
+              Preview
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-5 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/68">
+          <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+          Auto-scroll aktif - bisa digeser manual
+        </div>
+
+        <div
+          className="-mx-5 mt-4 flex snap-x gap-3 overflow-x-auto px-5 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          ref={railRef}
+          onMouseEnter={() => setPaused(true)}
+          onMouseLeave={() => setPaused(false)}
+          onTouchStart={() => setPaused(true)}
+          onTouchEnd={() => setPaused(false)}
+        >
           {previews.map((src, index) => (
             <button
-              className="w-[138px] shrink-0 snap-start overflow-hidden rounded-2xl border border-pink-400/30 bg-black text-left shadow-[0_0_20px_rgba(255,47,147,0.18)]"
+              className={`group w-[146px] shrink-0 snap-start overflow-hidden rounded-2xl border bg-black text-left shadow-[0_0_20px_rgba(255,47,147,0.18)] transition duration-300 ${
+                activeIndex === index
+                  ? "border-[#ffd166] shadow-[0_0_28px_rgba(255,209,102,0.25)]"
+                  : "border-pink-400/30"
+              }`}
               key={src}
               onClick={() => onSelect(index)}
             >
-              <Image
-                alt={`Preview komik ${index + 1}`}
-                className="h-[184px] w-full object-cover"
-                height={360}
-                src={src}
-                width={260}
-              />
-              <span className="block px-3 py-2 text-xs font-black text-[#ffd166]">
-                Preview {index + 1}
-              </span>
+              <div className="relative">
+                <Image
+                  alt={`Preview komik ${index + 1}`}
+                  className="h-[194px] w-full object-cover transition duration-300 group-hover:scale-105"
+                  height={360}
+                  src={src}
+                  width={260}
+                />
+                <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/55 to-transparent p-3">
+                  <span className="inline-flex rounded-full bg-[#ffd166] px-2 py-1 text-[10px] font-black text-[#16091d]">
+                    Tap lihat
+                  </span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between px-3 py-2">
+                <span className="text-xs font-black text-[#ffd166]">
+                  Preview {index + 1}
+                </span>
+                <span className="text-xs font-black text-white/45">+</span>
+              </div>
             </button>
+          ))}
+        </div>
+
+        <div className="mt-3 flex justify-center gap-2">
+          {previews.map((src, index) => (
+            <button
+              aria-label={`Lihat preview ${index + 1}`}
+              className={`h-2 rounded-full transition-all ${
+                activeIndex === index
+                  ? "w-7 bg-[#ffd166]"
+                  : "w-2 bg-white/25"
+              }`}
+              key={src}
+              onClick={() => {
+                const rail = railRef.current;
+                const firstItem = rail?.querySelector("button");
+                const itemWidth =
+                  firstItem instanceof HTMLElement
+                    ? firstItem.offsetWidth + 12
+                    : 150;
+
+                activeIndexRef.current = index;
+                setActiveIndex(index);
+                rail?.scrollTo({
+                  behavior: "smooth",
+                  left: index * itemWidth,
+                });
+              }}
+            />
           ))}
         </div>
       </div>
