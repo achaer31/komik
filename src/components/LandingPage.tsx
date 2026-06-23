@@ -122,6 +122,13 @@ const previewPages = [
   "/assets/previews/preview-07.jpeg",
   "/assets/previews/preview-08.jpeg",
   "/assets/previews/preview-09.jpeg",
+  "/assets/previews/preview-10.png",
+  "/assets/previews/preview-11.png",
+  "/assets/previews/preview-12.png",
+  "/assets/previews/preview-13.png",
+  "/assets/previews/preview-14.png",
+  "/assets/previews/preview-15.png",
+  "/assets/previews/preview-16.png",
 ];
 
 export function LandingPage() {
@@ -395,6 +402,50 @@ export function LandingPage() {
             alt="Koleksi lengkap dalam paket"
             src="/assets/bundle-overview.png"
           />
+        </section>
+
+        <section className="px-4 pt-8">
+          <div className="overflow-hidden rounded-[28px] border border-[#3ddc97]/30 bg-[#07140f] shadow-[0_0_32px_rgba(61,220,151,0.12)]">
+            <div className="bg-white p-2">
+              <Image
+                alt="Screenshot daftar file koleksi komik di Google Drive"
+                className="h-auto w-full rounded-[18px]"
+                height={900}
+                src="/assets/drive-proof.png"
+                width={1600}
+              />
+            </div>
+            <div className="p-5 text-center">
+              <p className="inline-flex rounded-full border border-[#3ddc97]/40 bg-[#3ddc97]/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#75ffbd]">
+                Bukti isi koleksi
+              </p>
+              <h2 className="mt-4 text-2xl font-black leading-tight">
+                File-nya Kelihatan Jelas, Bukan Cuma Janji
+              </h2>
+              <p className="mt-3 text-base leading-7 text-white/75">
+                Kamu bisa lihat sendiri ada banyak file komik digital dalam
+                satu folder akses. Setelah pembayaran berhasil, akses dikirim
+                sesuai paket yang kamu pilih.
+              </p>
+              <div className="mt-5 grid gap-3 text-left">
+                <CopyPoint
+                  body="Bukan cuma beberapa judul. Koleksinya tersusun dalam folder digital agar lebih gampang diakses."
+                  tone="success"
+                  title="100+ File Digital"
+                />
+                <CopyPoint
+                  body="Setelah pembayaran sukses, kamu tinggal buka link akses, download, lalu simpan untuk koleksi pribadi."
+                  tone="success"
+                  title="Akses Setelah Pembayaran"
+                />
+                <CopyPoint
+                  body="Tidak perlu bolak-balik cari link lagi. Sekali punya akses, koleksi bisa kamu simpan."
+                  tone="success"
+                  title="Bisa Disimpan Pribadi"
+                />
+              </div>
+            </div>
+          </div>
         </section>
 
         <CopySection
