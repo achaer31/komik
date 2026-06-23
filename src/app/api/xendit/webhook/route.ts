@@ -2,7 +2,12 @@ import { NextResponse } from "next/server";
 import { getOrderByExternalId, updateOrderByExternalId } from "@/lib/orders";
 import { sendAccessEmail } from "@/lib/email";
 import { sendMetaEvent } from "@/lib/meta";
-import { getExternalIdFromQrWebhook, isSuccessfulQrPayment } from "@/lib/xendit";
+import {
+  getExternalIdFromQrWebhook,
+  getOrderExternalIdFromVirtualAccountWebhook,
+  isSuccessfulQrPayment,
+  isSuccessfulVirtualAccountPayment,
+} from "@/lib/xendit";
 
 export async function POST(request: Request) {
   const callbackToken = request.headers.get("x-callback-token");
@@ -16,12 +21,14 @@ export async function POST(request: Request) {
 
   try {
     const payload = (await request.json()) as Record<string, unknown>;
+    const isQrPayment = isSuccessfulQrPayment(payload);
+    const isVaPayment = isSuccessfulVirtualAccountPayment(payload);
+    const externalId = isQrPayment
+      ? getExternalIdFromQrWebhook(payload)
+      : isVaPayment
+        ? getOrderExternalIdFromVirtualAccountWebhook(payload)
+        : null;
 
-    if (!isSuccessfulQrPayment(payload)) {
-      return NextResponse.json({ received: true });
-    }
-
-    const externalId = getExternalIdFromQrWebhook(payload);
     if (!externalId) {
       return NextResponse.json({ received: true });
     }
@@ -35,13 +42,24 @@ export async function POST(request: Request) {
     const paidAt =
       typeof data?.created === "string"
         ? data.created
+        : typeof payload.transaction_timestamp === "string"
+          ? payload.transaction_timestamp
         : new Date().toISOString();
 
     await updateOrderByExternalId(externalId, {
       status: "PAID",
       paid_at: paidAt,
       xendit_payment_id:
-        typeof data?.id === "string" ? data.id : order.xendit_payment_id,
+        typeof data?.id === "string"
+          ? data.id
+          : typeof payload.payment_id === "string"
+            ? payload.payment_id
+            : order.xendit_payment_id,
+      payment_method: isVaPayment ? "VIRTUAL_ACCOUNT" : "QRIS",
+      payment_channel:
+        typeof payload.bank_code === "string"
+          ? payload.bank_code
+          : order.payment_channel,
     });
 
     if (!order.email_sent_at) {

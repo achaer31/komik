@@ -21,10 +21,16 @@ export type OrderRecord = {
   include_addon: boolean;
   amount: number;
   status: PublicOrderStatus;
+  payment_method?: string | null;
+  payment_channel?: string | null;
   xendit_payment_id?: string | null;
   xendit_reference_id?: string | null;
   qris_payload?: Record<string, unknown> | null;
   qris_expires_at?: string | null;
+  va_payload?: Record<string, unknown> | null;
+  va_account_number?: string | null;
+  va_bank_code?: string | null;
+  va_expires_at?: string | null;
   paid_at?: string | null;
   email_sent_at?: string | null;
   email_status?: EmailDeliveryStatus | null;
@@ -52,10 +58,16 @@ type OrderUpdate = Partial<
   Pick<
     OrderRecord,
     | "status"
+    | "payment_method"
+    | "payment_channel"
     | "xendit_payment_id"
     | "xendit_reference_id"
     | "qris_payload"
     | "qris_expires_at"
+    | "va_payload"
+    | "va_account_number"
+    | "va_bank_code"
+    | "va_expires_at"
     | "paid_at"
     | "email_sent_at"
     | "email_status"

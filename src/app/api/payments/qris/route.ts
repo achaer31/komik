@@ -32,6 +32,8 @@ export async function POST(request: Request) {
     });
 
     await updateOrderByExternalId(order.external_id, {
+      payment_method: "QRIS",
+      payment_channel: "QRIS",
       xendit_payment_id: qris.id,
       xendit_reference_id: qris.reference_id,
       qris_payload: qris,

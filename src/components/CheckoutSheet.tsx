@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { formatRupiah } from "@/lib/products";
 import { trackMetaEvent } from "@/lib/meta-client";
 
-type Step = "email" | "method" | "qris" | "success";
+type Step = "email" | "method" | "qris" | "va" | "success";
 
 type OrderResponse = {
   external_id: string;
@@ -21,19 +21,22 @@ type QrisResponse = {
   xenditPaymentId: string;
 };
 
-const qrisApps = [
-  ["BCA", "BCA Mobile / myBCA"],
-  ["Livin'", "Mandiri Livin'"],
-  ["BRImo", "BRI BRImo"],
-  ["BNI", "BNI Mobile"],
-  ["BSI", "BSI Mobile"],
-  ["DANA", "DANA"],
-  ["GoPay", "GoPay"],
-  ["OVO", "OVO"],
-  ["ShopeePay", "ShopeePay"],
-  ["LinkAja", "LinkAja"],
-  ["Jago", "Bank Jago"],
-  ["SeaBank", "SeaBank"],
+type VaResponse = {
+  external_id: string;
+  amount: number;
+  bankCode: string;
+  bankName: string;
+  accountNumber: string;
+  expiresAt: string;
+  xenditPaymentId: string;
+};
+
+const virtualAccountBanks = [
+  ["BCA", "BCA Virtual Account"],
+  ["BNI", "BNI Virtual Account"],
+  ["BRI", "BRI Virtual Account"],
+  ["MANDIRI", "Mandiri Virtual Account"],
+  ["PERMATA", "Permata Virtual Account"],
 ];
 
 export function CheckoutSheet({
@@ -48,6 +51,8 @@ export function CheckoutSheet({
   const [includeAddon, setIncludeAddon] = useState(false);
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [qris, setQris] = useState<QrisResponse | null>(null);
+  const [va, setVa] = useState<VaResponse | null>(null);
+  const [selectedBank, setSelectedBank] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -66,7 +71,13 @@ export function CheckoutSheet({
   }, [open]);
 
   useEffect(() => {
-    if (!open || !order || (step !== "qris" && step !== "success")) return;
+    if (
+      !open ||
+      !order ||
+      (step !== "qris" && step !== "va" && step !== "success")
+    ) {
+      return;
+    }
     let attempts = 0;
     const check = async () => {
       attempts += 1;
@@ -169,6 +180,47 @@ export function CheckoutSheet({
     }
   };
 
+  const createVirtualAccount = async (bankCode: string) => {
+    if (!order) return;
+    setError("");
+    setSelectedBank(bankCode);
+    setLoading(true);
+    try {
+      const response = await fetch("/api/payments/virtual-account", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          external_id: order.external_id,
+          bank_code: bankCode,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "Gagal membuat Virtual Account.");
+      }
+      setVa(data);
+      void trackMetaEvent(
+        "AddPaymentInfo",
+        {
+          content_name: order.includeAddon
+            ? "Komik Fantasi Digital + Video Add-on"
+            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_type: "product",
+          currency: "IDR",
+          value: order.amount,
+          payment_method: `VA_${bankCode}`,
+        },
+        email,
+      );
+      setStep("va");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+    } finally {
+      setLoading(false);
+      setSelectedBank("");
+    }
+  };
+
   const manualCheck = async () => {
     if (!order) return;
     setError("");
@@ -220,6 +272,7 @@ export function CheckoutSheet({
               {step === "email" && "Masukkan Email Untuk Menerima Akses"}
               {step === "method" && "Pilih Metode Pembayaran"}
               {step === "qris" && "Scan QRIS Pembayaran"}
+              {step === "va" && "Bayar Virtual Account"}
               {step === "success" && "Pembayaran Berhasil"}
             </h2>
           </div>
@@ -308,39 +361,53 @@ export function CheckoutSheet({
                   AMAN
                 </div>
               </div>
+              <button
+                className="mt-4 h-14 w-full rounded-2xl bg-[#ffd166] text-base font-black text-[#16091d] disabled:opacity-60"
+                disabled={loading}
+                onClick={createQris}
+              >
+                {loading && selectedBank === "" ? "MEMBUAT QRIS..." : "BAYAR PALING CEPAT PAKAI QRIS"}
+              </button>
             </div>
 
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-black text-white">
-                    QRIS bisa dibayar dari aplikasi ini
+                    Metode lain: Virtual Account Bank
                   </p>
                   <p className="mt-1 text-xs leading-5 text-white/58">
-                    Ini bukan pilihan dummy. Setelah klik tombol kuning, QRIS
-                    asli akan dibuat dan bisa discan dari app berikut.
+                    Pilih bank, lalu sistem akan membuat nomor Virtual Account
+                    khusus untuk order kamu.
                   </p>
                 </div>
                 <span className="shrink-0 rounded-full bg-white px-3 py-1 text-xs font-black text-[#16091d]">
-                  Real QRIS
+                  Real VA
                 </span>
               </div>
-              <div className="mt-3 grid grid-cols-2 gap-2">
-                {qrisApps.map(([label, description]) => (
-                  <div
-                    className="rounded-2xl border border-white/10 bg-black/22 p-3"
-                    key={label}
+              <div className="mt-3 grid gap-2">
+                {virtualAccountBanks.map(([bankCode, bankName]) => (
+                  <button
+                    className="flex min-h-14 items-center justify-between gap-3 rounded-2xl border border-white/10 bg-black/22 p-3 text-left transition hover:border-[#ffd166]/60 disabled:opacity-60"
+                    disabled={loading}
+                    key={bankCode}
+                    onClick={() => createVirtualAccount(bankCode)}
                   >
-                    <p className="text-sm font-black text-white">{label}</p>
-                    <p className="mt-1 text-[11px] font-bold leading-4 text-white/52">
-                      {description}
-                    </p>
-                  </div>
+                    <div>
+                      <p className="text-sm font-black text-white">{bankName}</p>
+                      <p className="mt-1 text-[11px] font-bold leading-4 text-white/52">
+                        Transfer lewat ATM, mobile banking, atau internet banking.
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-white/10 px-3 py-1 text-xs font-black text-[#ffd166]">
+                      {loading && selectedBank === bankCode ? "..." : "Pilih"}
+                    </span>
+                  </button>
                 ))}
               </div>
               <div className="mt-3 rounded-2xl border border-[#ffd166]/25 bg-[#ffd166]/10 p-3 text-xs font-bold leading-5 text-[#ffe2a0]">
-                Caranya: klik buat QRIS, buka aplikasi bank/e-wallet, pilih
-                Scan QRIS, lalu scan atau upload gambar QRIS dari galeri.
+                QRIS tetap paling disarankan karena lebih cepat. Virtual Account
+                disediakan buat yang lebih nyaman transfer bank.
               </div>
             </div>
 
@@ -349,13 +416,6 @@ export function CheckoutSheet({
               paid terdeteksi, link akses otomatis dikirim ke email yang kamu
               isi tadi.
             </div>
-            <button
-              className="h-14 w-full rounded-2xl bg-[#ffd166] text-base font-black text-[#16091d] disabled:opacity-60"
-              disabled={loading}
-              onClick={createQris}
-            >
-              {loading ? "MEMBUAT QRIS..." : "BUAT QRIS PEMBAYARAN"}
-            </button>
           </div>
         )}
 
@@ -425,6 +485,61 @@ export function CheckoutSheet({
               onClick={manualCheck}
             >
               {loading ? "MENGECEK..." : "SAYA SUDAH BAYAR, CEK STATUS"}
+            </button>
+          </div>
+        )}
+
+        {step === "va" && va && order && (
+          <div className="space-y-4">
+            <div className="rounded-3xl border border-[#ffd166]/40 bg-[#ffd166]/10 p-4">
+              <p className="text-sm font-black uppercase tracking-[0.16em] text-[#ffd166]">
+                {va.bankName}
+              </p>
+              <p className="mt-3 text-sm text-white/65">Nomor Virtual Account</p>
+              <p className="mt-1 break-all text-3xl font-black text-white">
+                {va.accountNumber}
+              </p>
+              <button
+                className="mt-4 h-12 w-full rounded-xl bg-[#ffd166] text-sm font-black text-[#16091d]"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(va.accountNumber);
+                  setCopied(true);
+                }}
+              >
+                {copied ? "NOMOR VA TERSALIN" : "SALIN NOMOR VA"}
+              </button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="text-white/55">Total</p>
+                <p className="font-black text-[#ffd166]">
+                  {formatRupiah(va.amount)}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-white/5 p-3">
+                <p className="text-white/55">Bank</p>
+                <p className="font-black text-white">{va.bankCode}</p>
+              </div>
+            </div>
+            <ol className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
+              <li>1. Buka mobile banking/ATM/internet banking</li>
+              <li>2. Pilih menu Virtual Account atau transfer VA</li>
+              <li>3. Masukkan nomor VA di atas</li>
+              <li>4. Pastikan nominal sesuai: {formatRupiah(va.amount)}</li>
+              <li>5. Selesaikan pembayaran, akses dikirim otomatis</li>
+            </ol>
+            <button
+              className="h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white disabled:opacity-60"
+              disabled={loading}
+              onClick={manualCheck}
+            >
+              {loading ? "MENGECEK..." : "SAYA SUDAH BAYAR, CEK STATUS"}
+            </button>
+            <button
+              className="h-12 w-full rounded-2xl border border-white/10 bg-white/5 text-sm font-black text-white"
+              onClick={() => setStep("method")}
+            >
+              GANTI METODE PEMBAYARAN
             </button>
           </div>
         )}
