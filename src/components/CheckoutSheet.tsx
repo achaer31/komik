@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { formatRupiah } from "@/lib/products";
+import { trackMetaEvent } from "@/lib/meta-client";
 
 type Step = "email" | "method" | "qris" | "success";
 
@@ -98,6 +99,19 @@ export function CheckoutSheet({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal membuat order.");
       setOrder(data);
+      void trackMetaEvent(
+        "AddToCart",
+        {
+          content_name: includeAddon
+            ? "Komik Fantasi Digital + Video Add-on"
+            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_type: "product",
+          currency: "IDR",
+          value: total,
+          num_items: includeAddon ? 2 : 1,
+        },
+        email,
+      );
       setStep("method");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan.");
@@ -119,6 +133,19 @@ export function CheckoutSheet({
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal membuat QRIS.");
       setQris(data);
+      void trackMetaEvent(
+        "AddPaymentInfo",
+        {
+          content_name: order.includeAddon
+            ? "Komik Fantasi Digital + Video Add-on"
+            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_type: "product",
+          currency: "IDR",
+          value: order.amount,
+          payment_method: "QRIS",
+        },
+        email,
+      );
       setStep("qris");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Terjadi kesalahan.");

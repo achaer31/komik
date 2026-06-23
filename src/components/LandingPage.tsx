@@ -1,8 +1,10 @@
 "use client";
 
 import Image from "next/image";
+import { useEffect } from "react";
 import { useState } from "react";
 import { CheckoutSheet } from "./CheckoutSheet";
+import { trackMetaEvent } from "@/lib/meta-client";
 
 const benefits = [
   "100+ Koleksi",
@@ -28,6 +30,26 @@ const faqs = [
 
 export function LandingPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+
+  useEffect(() => {
+    void trackMetaEvent("ViewContent", {
+      content_name: "100+ Komik Fantasi Digital Pilihan 2026",
+      content_type: "product",
+      currency: "IDR",
+      value: 149900,
+    });
+  }, []);
+
+  const openCheckout = () => {
+    void trackMetaEvent("InitiateCheckout", {
+      content_name: "100+ Komik Fantasi Digital Pilihan 2026",
+      content_type: "product",
+      currency: "IDR",
+      value: 149900,
+      num_items: 1,
+    });
+    setCheckoutOpen(true);
+  };
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#08040b] pb-28 text-white">
@@ -74,7 +96,7 @@ export function LandingPage() {
             </div>
             <button
               className="mt-5 h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_28px_rgba(255,47,147,0.5)]"
-              onClick={() => setCheckoutOpen(true)}
+              onClick={openCheckout}
             >
               ORDER AKSES SEKARANG
             </button>
@@ -204,7 +226,7 @@ export function LandingPage() {
         </p>
         <button
           className="h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_30px_rgba(255,47,147,0.5)]"
-          onClick={() => setCheckoutOpen(true)}
+          onClick={openCheckout}
         >
           ORDER AKSES SEKARANG
         </button>

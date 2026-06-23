@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getOrderByExternalId, updateOrderByExternalId } from "@/lib/orders";
 import { sendAccessEmail } from "@/lib/email";
+import { sendMetaEvent } from "@/lib/meta";
 import { getExternalIdFromQrWebhook, isSuccessfulQrPayment } from "@/lib/xendit";
 
 export async function POST(request: Request) {
@@ -52,6 +53,21 @@ export async function POST(request: Request) {
         email_sent_at: new Date().toISOString(),
       });
     }
+
+    await sendMetaEvent({
+      eventName: "Purchase",
+      eventId: `purchase_${externalId}`,
+      email: order.email,
+      customData: {
+        content_name: order.include_addon
+          ? "Komik Fantasi Digital + Video Add-on"
+          : "100+ Komik Fantasi Digital Pilihan 2026",
+        content_type: "product",
+        currency: "IDR",
+        value: order.amount,
+        order_id: externalId,
+      },
+    });
 
     return NextResponse.json({ received: true });
   } catch {
