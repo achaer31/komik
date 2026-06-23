@@ -177,6 +177,17 @@ export function CheckoutSheet({
     }
   };
 
+  const downloadQris = () => {
+    if (!qris || !order) return;
+
+    const anchor = document.createElement("a");
+    anchor.href = qris.qrImage;
+    anchor.download = `qris-${order.external_id}.png`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    anchor.remove();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 px-3 sm:items-center">
       <button
@@ -290,6 +301,21 @@ export function CheckoutSheet({
                 className="mx-auto size-72 max-w-full"
                 src={qris.qrImage}
               />
+            </div>
+            <div className="rounded-2xl border border-[#ffd166]/30 bg-[#ffd166]/10 p-4">
+              <p className="text-sm font-bold text-[#ffd166]">
+                Bayar dari HP yang sama?
+              </p>
+              <p className="mt-1 text-sm leading-6 text-white/75">
+                Download QRIS dulu, lalu buka mobile banking atau e-wallet dan
+                pilih scan dari galeri.
+              </p>
+              <button
+                className="mt-3 h-12 w-full rounded-xl border border-[#ffd166]/60 bg-[#ffd166] text-sm font-black text-[#16091d]"
+                onClick={downloadQris}
+              >
+                DOWNLOAD QRIS
+              </button>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div className="rounded-2xl bg-white/5 p-3">
