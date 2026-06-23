@@ -2,6 +2,18 @@ import { createClient } from "@supabase/supabase-js";
 import type { PublicOrderStatus } from "./products";
 import { publicStatus } from "./products";
 
+export type EmailDeliveryStatus =
+  | "NOT_SENT"
+  | "SENT"
+  | "DELIVERED"
+  | "OPENED"
+  | "CLICKED"
+  | "BOUNCED"
+  | "FAILED"
+  | "COMPLAINED"
+  | "DELAYED"
+  | "SUPPRESSED";
+
 export type OrderRecord = {
   id?: string;
   external_id: string;
@@ -15,6 +27,18 @@ export type OrderRecord = {
   qris_expires_at?: string | null;
   paid_at?: string | null;
   email_sent_at?: string | null;
+  email_status?: EmailDeliveryStatus | null;
+  email_message_id?: string | null;
+  email_processed_at?: string | null;
+  email_delivered_at?: string | null;
+  email_opened_at?: string | null;
+  email_clicked_at?: string | null;
+  email_bounced_at?: string | null;
+  email_failed_at?: string | null;
+  email_complained_at?: string | null;
+  email_last_event_at?: string | null;
+  email_last_event?: string | null;
+  email_error?: string | null;
   created_at?: string;
   updated_at?: string;
 };
@@ -34,6 +58,18 @@ type OrderUpdate = Partial<
     | "qris_expires_at"
     | "paid_at"
     | "email_sent_at"
+    | "email_status"
+    | "email_message_id"
+    | "email_processed_at"
+    | "email_delivered_at"
+    | "email_opened_at"
+    | "email_clicked_at"
+    | "email_bounced_at"
+    | "email_failed_at"
+    | "email_complained_at"
+    | "email_last_event_at"
+    | "email_last_event"
+    | "email_error"
   >
 >;
 
@@ -56,7 +92,21 @@ function normalizeOrder(order: Record<string, unknown>): OrderRecord {
   return {
     ...(order as OrderRecord),
     status: publicStatus(order.status as string | undefined),
+    email_status: normalizeEmailStatus(order.email_status as string | undefined),
   };
+}
+
+export function normalizeEmailStatus(status?: string | null): EmailDeliveryStatus {
+  if (status === "SENT") return "SENT";
+  if (status === "DELIVERED") return "DELIVERED";
+  if (status === "OPENED") return "OPENED";
+  if (status === "CLICKED") return "CLICKED";
+  if (status === "BOUNCED") return "BOUNCED";
+  if (status === "FAILED") return "FAILED";
+  if (status === "COMPLAINED") return "COMPLAINED";
+  if (status === "DELAYED") return "DELAYED";
+  if (status === "SUPPRESSED") return "SUPPRESSED";
+  return "NOT_SENT";
 }
 
 export async function createOrder(order: OrderInsert) {
@@ -97,4 +147,155 @@ export async function updateOrderByExternalId(
 
   if (error) throw new Error(error.message);
   return normalizeOrder(data);
+}
+
+export async function listAdminOrders() {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("orders")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (error) throw new Error(error.message);
+  return (data ?? []).map(normalizeOrder);
+}
+
+export async function getAdminOrdersSnapshot() {
+  const orders = await listAdminOrders();
+  const paidOrders = orders.filter((order) => order.status === "PAID");
+  const pendingOrders = orders.filter((order) => order.status === "PENDING");
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const dailyRevenue = buildDailyRevenue(paidOrders);
+
+  return {
+    orders,
+    stats: {
+      totalRevenue: paidOrders.reduce((sum, order) => sum + order.amount, 0),
+      todayRevenue: paidOrders
+        .filter((order) => getOrderDay(order) === todayKey)
+        .reduce((sum, order) => sum + order.amount, 0),
+      paidCount: paidOrders.length,
+      pendingCount: pendingOrders.length,
+      deliveredCount: orders.filter((order) =>
+        ["DELIVERED", "OPENED", "CLICKED"].includes(order.email_status ?? ""),
+      ).length,
+      openedCount: orders.filter((order) =>
+        ["OPENED", "CLICKED"].includes(order.email_status ?? ""),
+      ).length,
+    },
+    dailyRevenue,
+  };
+}
+
+function getOrderDay(order: OrderRecord) {
+  return (order.paid_at ?? order.created_at ?? new Date().toISOString()).slice(
+    0,
+    10,
+  );
+}
+
+function buildDailyRevenue(orders: OrderRecord[]) {
+  const totals = new Map<string, { date: string; revenue: number; count: number }>();
+  const today = new Date();
+
+  for (let index = 13; index >= 0; index -= 1) {
+    const day = new Date(today);
+    day.setDate(today.getDate() - index);
+    const date = day.toISOString().slice(0, 10);
+    totals.set(date, { date, revenue: 0, count: 0 });
+  }
+
+  for (const order of orders) {
+    const date = getOrderDay(order);
+    const existing = totals.get(date) ?? { date, revenue: 0, count: 0 };
+    existing.revenue += order.amount;
+    existing.count += 1;
+    totals.set(date, existing);
+  }
+
+  return Array.from(totals.values()).sort((a, b) =>
+    a.date.localeCompare(b.date),
+  );
+}
+
+type ResendEventRecord = {
+  id: string;
+  type: string;
+  createdAt: string;
+  emailId: string | null;
+  recipient: string | null;
+  payload: Record<string, unknown>;
+};
+
+export async function recordResendEmailEvent(event: ResendEventRecord) {
+  const supabase = getSupabase();
+
+  await supabase.from("resend_events").upsert(
+    {
+      id: event.id,
+      event_type: event.type,
+      email_id: event.emailId,
+      recipient: event.recipient,
+      payload: event.payload,
+      created_at: event.createdAt,
+    },
+    { onConflict: "id" },
+  );
+
+  const update = getEmailEventUpdate(event.type, event.createdAt);
+  if (!update) return;
+
+  const query = supabase
+    .from("orders")
+    .update({ ...update, updated_at: new Date().toISOString() });
+
+  if (event.emailId) {
+    await query.eq("email_message_id", event.emailId);
+    return;
+  }
+
+  if (event.recipient) {
+    await query.eq("email", event.recipient).is("email_message_id", null);
+  }
+}
+
+function getEmailEventUpdate(
+  type: string,
+  eventAt: string,
+): OrderUpdate | null {
+  const base = {
+    email_last_event: type,
+    email_last_event_at: eventAt,
+  };
+
+  if (type === "email.sent") {
+    return { ...base, email_status: "SENT", email_processed_at: eventAt };
+  }
+  if (type === "email.delivered") {
+    return { ...base, email_status: "DELIVERED", email_delivered_at: eventAt };
+  }
+  if (type === "email.opened") {
+    return { ...base, email_status: "OPENED", email_opened_at: eventAt };
+  }
+  if (type === "email.clicked") {
+    return { ...base, email_status: "CLICKED", email_clicked_at: eventAt };
+  }
+  if (type === "email.bounced") {
+    return { ...base, email_status: "BOUNCED", email_bounced_at: eventAt };
+  }
+  if (type === "email.failed") {
+    return { ...base, email_status: "FAILED", email_failed_at: eventAt };
+  }
+  if (type === "email.complained") {
+    return { ...base, email_status: "COMPLAINED", email_complained_at: eventAt };
+  }
+  if (type === "email.delivery_delayed") {
+    return { ...base, email_status: "DELAYED" };
+  }
+  if (type === "email.suppressed") {
+    return { ...base, email_status: "SUPPRESSED" };
+  }
+
+  return null;
 }

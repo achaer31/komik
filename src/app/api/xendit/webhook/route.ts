@@ -45,14 +45,34 @@ export async function POST(request: Request) {
     });
 
     if (!order.email_sent_at) {
-      await sendAccessEmail({
-        to: order.email,
-        includeAddon: order.include_addon,
-      });
+      try {
+        const sentAt = new Date().toISOString();
+        const emailResult = await sendAccessEmail({
+          to: order.email,
+          includeAddon: order.include_addon,
+        });
 
-      await updateOrderByExternalId(externalId, {
-        email_sent_at: new Date().toISOString(),
-      });
+        await updateOrderByExternalId(externalId, {
+          email_sent_at: sentAt,
+          email_status: "SENT",
+          email_message_id: emailResult.id,
+          email_processed_at: sentAt,
+          email_last_event: "email.sent",
+          email_last_event_at: sentAt,
+          email_error: null,
+        });
+      } catch (emailError) {
+        await updateOrderByExternalId(externalId, {
+          email_status: "FAILED",
+          email_failed_at: new Date().toISOString(),
+          email_last_event: "email.failed",
+          email_last_event_at: new Date().toISOString(),
+          email_error:
+            emailError instanceof Error
+              ? emailError.message
+              : "Gagal mengirim email akses.",
+        });
+      }
     }
 
     await sendMetaEvent({

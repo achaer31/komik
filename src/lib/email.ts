@@ -48,10 +48,16 @@ export async function sendAccessEmail(params: {
     </div>
   `;
 
-  await resend.emails.send({
+  const { data, error } = await resend.emails.send({
     from,
     to: params.to,
     subject: "Akses Komik Pilihanku Kamu Sudah Aktif",
     html,
   });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return { id: data?.id ?? null };
 }

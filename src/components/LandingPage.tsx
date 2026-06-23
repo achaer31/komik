@@ -165,6 +165,25 @@ export function LandingPage() {
             <p className="mt-3 leading-7 text-white/75">
               Lebih murah ambil sekarang daripada nanti cari lagi satu-satu.
             </p>
+            <div className="mt-5 overflow-hidden rounded-[22px] border border-pink-400/30 bg-black shadow-[0_0_28px_rgba(255,47,147,0.22)]">
+              <iframe
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="aspect-video w-full"
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                src="https://www.youtube.com/embed/videoseries?list=PLY7oNld5yxvpke8b_VP-GRs50afLUPAi5"
+                title="Preview playlist 100+ video komik fantasi 2026"
+              />
+            </div>
+            <a
+              className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl border border-[#ffd166]/50 bg-[#ffd166]/10 text-sm font-black text-[#ffd166]"
+              href="https://www.youtube.com/watch?v=-8MW4XzP2NM&list=PLY7oNld5yxvpke8b_VP-GRs50afLUPAi5"
+              rel="noreferrer"
+              target="_blank"
+            >
+              LIHAT PLAYLIST VIDEO
+            </a>
           </div>
         </section>
 
