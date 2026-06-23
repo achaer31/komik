@@ -1,9 +1,10 @@
 type XenditQrCodeResponse = {
   id: string;
-  external_id: string;
+  reference_id: string;
   amount: number;
+  currency: "IDR";
   qr_string: string;
-  callback_url: string;
+  expires_at: string;
   type: "DYNAMIC" | "STATIC";
   status: string;
   created: string;
@@ -21,24 +22,26 @@ export async function createDynamicQrisPayment(params: {
     throw new Error("XENDIT_SECRET_KEY belum dikonfigurasi.");
   }
 
-  const siteUrl =
-    process.env.NEXT_PUBLIC_SITE_URL || "https://komikpilihanku.vercel.app";
-  const body = new URLSearchParams({
-    external_id: params.externalId,
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+  const body = {
+    reference_id: params.externalId,
     type: "DYNAMIC",
-    amount: String(params.amount),
-    callback_url: `${siteUrl}/api/xendit/webhook`,
-    "metadata[email]": params.email,
-  });
+    currency: "IDR",
+    amount: params.amount,
+    expires_at: expiresAt,
+    metadata: {
+      email: params.email,
+    },
+  };
 
   const response = await fetch("https://api.xendit.co/qr_codes", {
     method: "POST",
     headers: {
       Authorization: `Basic ${Buffer.from(`${secretKey}:`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
+      "Content-Type": "application/json",
       "api-version": "2022-07-31",
     },
-    body,
+    body: JSON.stringify(body),
   });
 
   const payload = (await response.json()) as XenditQrCodeResponse & {
@@ -54,13 +57,17 @@ export async function createDynamicQrisPayment(params: {
 }
 
 export function isSuccessfulQrPayment(payload: Record<string, unknown>) {
+  const data = payload.data as Record<string, unknown> | undefined;
   return (
     payload.event === "qr.payment" &&
-    (payload.status === "COMPLETED" || payload.status === "SUCCEEDED")
+    (data?.status === "COMPLETED" || data?.status === "SUCCEEDED")
   );
 }
 
 export function getExternalIdFromQrWebhook(payload: Record<string, unknown>) {
+  const data = payload.data as Record<string, unknown> | undefined;
+  if (typeof data?.reference_id === "string") return data.reference_id;
+
   const qrCode = payload.qr_code as Record<string, unknown> | undefined;
   return typeof qrCode?.external_id === "string" ? qrCode.external_id : null;
 }

@@ -31,12 +31,11 @@ export async function POST(request: Request) {
       email: order.email,
     });
 
-    const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
     await updateOrderByExternalId(order.external_id, {
       xendit_payment_id: qris.id,
-      xendit_reference_id: qris.external_id,
+      xendit_reference_id: qris.reference_id,
       qris_payload: qris,
-      qris_expires_at: expiresAt,
+      qris_expires_at: qris.expires_at,
     });
 
     const qrImage = await QRCode.toDataURL(qris.qr_string, {
@@ -49,7 +48,7 @@ export async function POST(request: Request) {
       external_id: order.external_id,
       amount: order.amount,
       qrImage,
-      expiresAt,
+      expiresAt: qris.expires_at,
       xenditPaymentId: qris.id,
     });
   } catch (error) {

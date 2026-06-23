@@ -31,16 +31,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ received: true });
     }
 
+    const data = payload.data as Record<string, unknown> | undefined;
     const paidAt =
-      typeof payload.created === "string"
-        ? payload.created
+      typeof data?.created === "string"
+        ? data.created
         : new Date().toISOString();
 
     await updateOrderByExternalId(externalId, {
       status: "PAID",
       paid_at: paidAt,
       xendit_payment_id:
-        typeof payload.id === "string" ? payload.id : order.xendit_payment_id,
+        typeof data?.id === "string" ? data.id : order.xendit_payment_id,
     });
 
     if (!order.email_sent_at) {
