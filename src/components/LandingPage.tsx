@@ -1,8 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { trackMetaEvent } from "@/lib/meta-client";
 
@@ -13,23 +12,121 @@ const benefits = [
   "Download Selamanya",
 ];
 
-const steps = [
-  "Isi email",
-  "Pilih QRIS",
-  "Scan dan bayar",
-  "Link akses dikirim otomatis ke email",
+const painPoints = [
+  [
+    "Cari manual itu buang waktu",
+    "Harus buka banyak halaman, skip iklan, cek file satu-satu, dan belum tentu dapat yang lengkap.",
+  ],
+  [
+    "Bayar satuan bisa lebih mahal",
+    "Kalau ambil satu-satu, totalnya bisa jauh lebih besar daripada ambil langsung dalam satu bundle.",
+  ],
+  [
+    "Link sering hilang atau error",
+    "Hari ini ada, besok bisa hilang. Belum lagi file rusak, kepotong, atau susah diakses ulang.",
+  ],
 ];
 
-const faqs = [
-  ["Ini langganan?", "Bukan, sekali bayar."],
-  ["Setelah bayar dapat apa?", "Link akses digital dikirim ke email."],
-  ["Bisa download?", "Bisa, sesuai akses file yang tersedia."],
-  ["Kalau email belum masuk?", "Cek inbox, spam, promosi, atau hubungi admin."],
-  ["Untuk semua umur?", "Tidak, hanya untuk pembeli dewasa 18+."],
+const packageItems = [
+  [
+    "100+ Komik Digital",
+    "Langsung dapat koleksi besar dalam satu akses, jadi kamu nggak perlu cari manual satu-satu.",
+  ],
+  [
+    "Akses Lifetime Selamanya",
+    "Sekali beli, akses tetap milik kamu. Bukan langganan bulanan dan bukan bayar ulang.",
+  ],
+  [
+    "Bisa Download & Simpan Pribadi",
+    "File bisa kamu download, simpan, dan baca kapan saja tanpa harus bolak-balik cari link lagi.",
+  ],
+  [
+    "Banyak Variasi Cerita",
+    "Cocok buat kamu yang suka koleksi komik fantasi dewasa dengan berbagai karakter, alur, dan gaya cerita.",
+  ],
+  [
+    "Bonus Update Launching",
+    "Selama masa promo, pembeli awal berkesempatan mendapat update tambahan jika ada koleksi baru yang ditambahkan.",
+  ],
+];
+
+const addonItems = [
+  [
+    "100+ Video Komik Digital",
+    "Tambahan koleksi video komik fantasi pilihan yang bisa kamu akses sebagai pelengkap bundle utama.",
+  ],
+  [
+    "Lebih Hemat Ambil Sekarang",
+    "Daripada nanti cari lagi satu-satu, kena iklan lagi, atau bayar terpisah, add-on ini dibuat lebih murah saat checkout.",
+  ],
+  [
+    "Cocok Buat Koleksi Lengkap",
+    "Kalau kamu sudah ambil bundle komik utama, add-on ini bikin koleksi kamu lebih lengkap dalam satu akses digital.",
+  ],
+];
+
+const proofItems = [
+  [
+    "100+ Koleksi Digital",
+    "Isi paketnya bukan cuma beberapa file. Kamu mendapatkan koleksi besar dalam satu akses.",
+  ],
+  [
+    "Akses Setelah Pembayaran",
+    "Setelah pembayaran berhasil, kamu akan mendapatkan akses sesuai paket yang dipilih.",
+  ],
+  [
+    "Bisa Disimpan Pribadi",
+    "File bisa kamu download dan simpan untuk koleksi pribadi, jadi nggak perlu akses ulang dari banyak tempat.",
+  ],
+];
+
+const steps = [
+  [
+    "1",
+    "Klik Tombol Beli",
+    "Pilih paket utama atau tambah add-on video kalau mau koleksi yang lebih lengkap.",
+  ],
+  [
+    "2",
+    "Selesaikan Pembayaran",
+    "Ikuti instruksi pembayaran QRIS sampai transaksi berhasil.",
+  ],
+  [
+    "3",
+    "Dapat Link Akses",
+    "Setelah pembayaran sukses, kamu akan mendapatkan akses/download sesuai paket yang dibeli.",
+  ],
+  [
+    "4",
+    "Download & Simpan Pribadi",
+    "File bisa kamu simpan untuk koleksi pribadi dan dibaca kapan saja.",
+  ],
+];
+
+const dealItems = [
+  "100+ komik fantasi dewasa pilihan",
+  "Akses lifetime selamanya",
+  "Bisa download dan simpan pribadi",
+  "Sekali bayar, bukan langganan",
+  "Banyak variasi cerita dan karakter",
+  "Bantuan admin kalau ada kendala akses",
+];
+
+const previewPages = [
+  "/assets/previews/preview-01.jpeg",
+  "/assets/previews/preview-02.jpeg",
+  "/assets/previews/preview-03.jpeg",
+  "/assets/previews/preview-04.jpeg",
+  "/assets/previews/preview-05.jpeg",
+  "/assets/previews/preview-06.jpeg",
+  "/assets/previews/preview-07.jpeg",
+  "/assets/previews/preview-08.jpeg",
+  "/assets/previews/preview-09.jpeg",
 ];
 
 export function LandingPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [selectedPreview, setSelectedPreview] = useState<number | null>(null);
 
   useEffect(() => {
     void trackMetaEvent("ViewContent", {
@@ -51,6 +148,20 @@ export function LandingPage() {
     setCheckoutOpen(true);
   };
 
+  const showNextPreview = () => {
+    setSelectedPreview((current) =>
+      current === null ? 0 : (current + 1) % previewPages.length,
+    );
+  };
+
+  const showPreviousPreview = () => {
+    setSelectedPreview((current) =>
+      current === null
+        ? 0
+        : (current - 1 + previewPages.length) % previewPages.length,
+    );
+  };
+
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#08040b] pb-28 text-white">
       <div className="w-screen max-w-[430px] overflow-hidden bg-[radial-gradient(circle_at_top,#4a103a_0%,#120817_42%,#08040b_78%)] shadow-2xl shadow-black sm:mx-auto md:my-8 md:rounded-[32px]">
@@ -66,39 +177,45 @@ export function LandingPage() {
         </header>
 
         <section className="px-4 pt-5">
-          <div className="overflow-hidden rounded-[26px] border border-pink-400/30 bg-black shadow-[0_0_40px_rgba(255,47,147,0.25)]">
-            <Image
-              alt="100+ Komik Fantasi Dewasa Pilihan 2026"
-              className="h-auto w-full"
-              height={1024}
-              priority
-              src="/assets/hero.png"
-              width={1024}
-            />
-          </div>
+          <ImageCard
+            alt="100+ Komik Fantasi Dewasa Pilihan 2026"
+            priority
+            src="/assets/hero.png"
+          />
           <div className="pt-6">
             <p className="inline-flex rounded-full border border-[#ffd166]/50 bg-[#ffd166]/10 px-4 py-2 text-xs font-black tracking-[0.16em] text-[#ffd166]">
-              PROMO LAUNCHING
+              PROMO LAUNCHING - KHUSUS 18+
             </p>
             <h1 className="mt-4 text-4xl font-black leading-[1.02] tracking-tight">
-              100+ Komik Fantasi Digital Pilihan 2026
+              100+ Komik Fantasi Dewasa Pilihan 2026
             </h1>
             <p className="mt-4 text-lg leading-7 text-white/76">
-              Sekali beli, akses selamanya. Bisa download dan simpan pribadi.
+              Sekali beli, bisa download dan simpan selamanya.
             </p>
             <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-white/55 line-through">
                 Harga Normal Rp299.900
               </p>
-              <p className="mt-1 text-[22px] font-black leading-tight text-[#ffd166] min-[420px]:text-3xl">
-                Promo Hari Ini Rp149.900
+              <p className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-white/70">
+                Hari Ini Promo Launching
+              </p>
+              <p className="mt-1 text-[34px] font-black leading-tight text-[#ffd166]">
+                Rp149.900
+              </p>
+              <p className="mt-2 text-sm font-bold text-white/70">
+                Akses lifetime - bukan langganan bulanan
               </p>
             </div>
+            <p className="mt-4 rounded-3xl border border-pink-400/20 bg-[#120914] p-4 text-base leading-7 text-white/78">
+              Daripada cari satu-satu, kena iklan terus, link mati, atau bayar
+              per judul, ambil langsung bundle digitalnya dalam satu paket
+              besar.
+            </p>
             <button
               className="mt-5 h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_28px_rgba(255,47,147,0.5)]"
               onClick={openCheckout}
             >
-              ORDER AKSES SEKARANG
+              AMBIL AKSES LIFETIME SEKARANG
             </button>
           </div>
         </section>
@@ -122,49 +239,140 @@ export function LandingPage() {
           <ImageCard alt="Keuntungan utama bundle" src="/assets/benefits.png" />
         </section>
 
-        <section className="px-4 pt-8">
-          <div className="rounded-[28px] border border-[#ffd166]/30 bg-[#120914] p-5">
-            <h2 className="text-2xl font-black">Kenapa ambil bundlenya?</h2>
-            <p className="mt-3 text-base leading-7 text-white/75">
-              Capek cari satu-satu, kena iklan terus, link mati, atau bayar per
-              judul? Ambil bundle-nya sekali saja.
-            </p>
+        <CopySection eyebrow="Buat yang males ribet" title="Capek Cari Komik Satu-Satu?">
+          <p className="text-base leading-7 text-white/75">
+            Biasanya mau baca komik fantasi dewasa harus muter-muter dulu:
+            kena iklan, link mati, file nggak lengkap, atau malah harus bayar
+            per judul.
+          </p>
+          <div className="mt-4 space-y-3">
+            {painPoints.map(([title, body]) => (
+              <CopyPoint body={body} key={title} tone="danger" title={title} />
+            ))}
           </div>
-        </section>
+          <p className="mt-5 text-base font-black text-[#ffd166]">
+            Solusinya: ambil bundle-nya sekalian.
+          </p>
+          <p className="mt-2 text-base leading-7 text-white/75">
+            Dalam satu paket, kamu langsung dapat 100+ koleksi komik digital
+            yang bisa di-download, disimpan pribadi, dan dibaca kapan saja.
+          </p>
+        </CopySection>
 
         <section className="px-4 pt-6">
           <ImageCard alt="Kenapa worth it" src="/assets/worth-it.png" />
         </section>
 
-        <section className="px-4 pt-8">
-          <div className="rounded-[28px] bg-[#ff2f93] p-5 text-[#fff7fb]">
-            <h2 className="text-2xl font-black">Lebih hemat per koleksi</h2>
-            <p className="mt-3 text-base font-semibold leading-7">
-              Dengan Rp149.900 untuk 100+ koleksi, jatuhnya sekitar Rp1.499 per
-              komik.
-            </p>
+        <CopySection
+          eyebrow="Isi paketnya"
+          title="Dalam 1 Bundle Ini Kamu Dapat Apa Aja?"
+        >
+          <p className="text-base leading-7 text-white/75">
+            Bukan cuma 1-2 judul. Ini koleksi besar berisi 100+ komik digital
+            fantasi dewasa pilihan yang bisa kamu simpan dan baca kapan saja.
+          </p>
+          <div className="mt-4 space-y-3">
+            {packageItems.map(([title, body]) => (
+              <CopyPoint body={body} key={title} tone="success" title={title} />
+            ))}
           </div>
-        </section>
+          <p className="mt-5 text-base font-black text-[#ffd166]">
+            Intinya: cukup sekali beli, koleksinya langsung jadi milik kamu.
+          </p>
+          <p className="mt-2 text-base leading-7 text-white/75">
+            Dari harga normal Rp299.900, sekarang promo launching hanya
+            Rp149.900.
+          </p>
+        </CopySection>
 
         <section className="px-4 pt-6">
           <ImageCard alt="Isi bundle" src="/assets/bundle-content.png" />
         </section>
 
+        <PreviewCarousel
+          onSelect={setSelectedPreview}
+          previews={previewPages}
+        />
+
+        <section className="px-4 pt-8">
+          <div className="rounded-[28px] bg-[#ff2f93] p-5 text-[#fff7fb]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-white/75">
+              Hitung sendiri value-nya
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              Kenapa Bundle Ini Worth It Banget?
+            </h2>
+            <p className="mt-3 text-base font-semibold leading-7">
+              Karena kamu nggak cuma beli satu judul. Kamu ambil langsung
+              koleksi besar yang bisa disimpan dan dibaca kapan saja.
+            </p>
+            <div className="mt-5 rounded-3xl bg-[#2a111f] p-4">
+              <p className="text-sm font-bold text-white/70">
+                Harga promo bundle
+              </p>
+              <p className="text-3xl font-black text-[#ffd166]">Rp149.900</p>
+              <p className="mt-1 text-sm font-bold text-white/70">
+                Untuk 100+ komik digital
+              </p>
+              <div className="mt-4 rounded-2xl bg-[#451528] p-4">
+                <p className="text-sm font-bold text-white/70">
+                  Jatuhnya mulai dari sekitar
+                </p>
+                <p className="text-3xl font-black text-[#ffd166]">Rp1.000an</p>
+                <p className="text-sm font-bold text-white/70">per komik</p>
+              </div>
+            </div>
+            <div className="mt-4 space-y-3">
+              <CopyPoint
+                body="Waktu habis buat cari link, buka iklan, cek file, dan belum tentu koleksinya lengkap."
+                tone="plain"
+                title="Kalau cari satu-satu"
+              />
+              <CopyPoint
+                body="Totalnya bisa jauh lebih mahal, apalagi kalau kamu memang suka koleksi komik fantasi digital."
+                tone="plain"
+                title="Kalau bayar satuan"
+              />
+              <CopyPoint
+                body="Cukup sekali bayar, langsung dapat 100+ koleksi digital, bisa download, simpan, dan akses sepuasnya."
+                tone="success"
+                title="Kalau ambil bundle ini"
+              />
+            </div>
+            <p className="mt-5 text-base font-black">
+              Lebih hemat, lebih praktis, lebih puas.
+            </p>
+          </div>
+        </section>
+
         <section className="px-4 pt-8">
           <div className="rounded-[28px] border border-[#ffd166]/40 bg-[#140a17] p-5">
             <ImageCard alt="Add-on video komik" src="/assets/addon.png" />
-            <h2 className="mt-5 text-2xl font-black">
-              Tambah 100+ Video Komik Fantasi 2026
+            <p className="mt-5 text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+              Add-on spesial
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              Mau Versi Lebih Lengkap?
             </h2>
+            <p className="mt-3 leading-7 text-white/75">
+              Tambahkan koleksi 100+ Video Komik Fantasi Pilihan 2026 dengan
+              harga khusus add-on.
+            </p>
             <p className="mt-2 text-sm text-white/55 line-through">
-              Normal Rp149.900
+              Harga Normal Rp149.900
             </p>
             <p className="text-3xl font-black text-[#ffd166]">
-              Add-on spesial Rp99.900
+              Harga Add-On Hari Ini Rp99.900
             </p>
             <p className="mt-3 leading-7 text-white/75">
-              Lebih murah ambil sekarang daripada nanti cari lagi satu-satu.
+              Tambahan 100+ video komik digital untuk melengkapi bundle utama
+              kamu.
             </p>
+            <div className="mt-4 space-y-3">
+              {addonItems.map(([title, body]) => (
+                <CopyPoint body={body} key={title} tone="success" title={title} />
+              ))}
+            </div>
             <div className="mt-5 overflow-hidden rounded-[22px] border border-pink-400/30 bg-black shadow-[0_0_28px_rgba(255,47,147,0.22)]">
               <iframe
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -176,14 +384,9 @@ export function LandingPage() {
                 title="Preview playlist 100+ video komik fantasi 2026"
               />
             </div>
-            <a
-              className="mt-4 flex h-12 w-full items-center justify-center rounded-2xl border border-[#ffd166]/50 bg-[#ffd166]/10 text-sm font-black text-[#ffd166]"
-              href="https://www.youtube.com/watch?v=-8MW4XzP2NM&list=PLY7oNld5yxvpke8b_VP-GRs50afLUPAi5"
-              rel="noreferrer"
-              target="_blank"
-            >
-              LIHAT PLAYLIST VIDEO
-            </a>
+            <p className="mt-5 text-base font-black text-[#ffd166]">
+              Bundle utama + add-on video = koleksi lebih lengkap.
+            </p>
           </div>
         </section>
 
@@ -194,47 +397,93 @@ export function LandingPage() {
           />
         </section>
 
-        <section className="px-4 pt-8">
-          <h2 className="text-2xl font-black">Cara akses</h2>
+        <CopySection
+          eyebrow="Bukan produk kosong"
+          title="Koleksinya Banyak, Bukan Cuma Janji!"
+          variant="green"
+        >
+          <p className="text-base leading-7 text-white/75">
+            Bundle ini berisi 100+ file komik digital yang sudah dikumpulkan
+            dalam satu akses agar kamu nggak perlu cari manual satu-satu lagi.
+          </p>
           <div className="mt-4 space-y-3">
-            {steps.map((step, index) => (
+            {proofItems.map(([title, body]) => (
+              <CopyPoint body={body} key={title} tone="success" title={title} />
+            ))}
+          </div>
+          <p className="mt-5 text-base font-black text-[#ffd166]">
+            Jadi sebelum bayar, kamu sudah tahu value yang kamu ambil.
+          </p>
+        </CopySection>
+
+        <CopySection
+          eyebrow="Cara aksesnya gampang"
+          title="Setelah Bayar, Langsung Dapat Akses"
+        >
+          <p className="text-base leading-7 text-white/75">
+            Prosesnya simpel. Kamu tinggal checkout, selesaikan pembayaran,
+            lalu akses/download koleksi sesuai paket yang kamu pilih.
+          </p>
+          <div className="mt-4 space-y-3">
+            {steps.map(([number, title, body]) => (
               <div
                 className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-4"
-                key={step}
+                key={title}
               >
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#ffd166] text-sm font-black text-[#16091d]">
-                  {index + 1}
+                  {number}
                 </span>
-                <p className="font-bold text-white">{step}</p>
+                <div>
+                  <p className="font-black text-white">{title}</p>
+                  <p className="mt-1 text-sm leading-6 text-white/68">{body}</p>
+                </div>
               </div>
             ))}
           </div>
-        </section>
-
-        <section className="px-4 pt-8">
-          <h2 className="text-2xl font-black">FAQ</h2>
-          <div className="mt-4 space-y-3">
-            {faqs.map(([question, answer]) => (
-              <details
-                className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                key={question}
-              >
-                <summary className="cursor-pointer text-base font-black">
-                  {question}
-                </summary>
-                <p className="mt-3 leading-7 text-white/70">{answer}</p>
-              </details>
-            ))}
-          </div>
-        </section>
+        </CopySection>
 
         <section className="px-4 py-8">
-          <div className="rounded-2xl border border-red-400/35 bg-red-500/10 p-4 text-sm leading-6 text-red-50">
-            Produk digital ini hanya untuk pembeli dewasa 18+. Pembeli
-            bertanggung jawab menggunakan akses untuk konsumsi pribadi. Dilarang
-            menyebarkan ulang, menjual ulang, atau membagikan akses tanpa izin.
-            Pastikan semua konten yang dijual legal dan memiliki hak distribusi
-            yang sah.
+          <div className="rounded-[28px] border border-[#ffd166]/40 bg-[#140a17] p-5">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+              Rangkuman deal
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              Jadi, Dengan Rp149.900 Kamu Dapat Ini Semua
+            </h2>
+            <p className="mt-3 text-base leading-7 text-white/75">
+              Sekali checkout, langsung ambil bundle komik digital fantasi
+              dewasa pilihan 2026 dengan akses lifetime.
+            </p>
+            <div className="mt-4 space-y-2">
+              {dealItems.map((item) => (
+                <div
+                  className="rounded-2xl border border-[#ffd166]/20 bg-[#ffd166]/10 px-4 py-3 text-sm font-bold text-white"
+                  key={item}
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
+            <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm text-white/55 line-through">
+                Harga normal Rp299.900
+              </p>
+              <p className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-white/70">
+                Promo Launching Hari Ini
+              </p>
+              <p className="mt-1 text-4xl font-black text-[#ffd166]">
+                Rp149.900
+              </p>
+              <p className="mt-2 text-sm font-bold text-white/70">
+                Untuk 100+ koleksi digital dengan akses lifetime.
+              </p>
+            </div>
+            <button
+              className="mt-5 h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_28px_rgba(255,47,147,0.5)]"
+              onClick={openCheckout}
+            >
+              YA, SAYA MAU AMBIL BUNDLE INI
+            </button>
           </div>
         </section>
       </div>
@@ -247,9 +496,44 @@ export function LandingPage() {
           className="h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_30px_rgba(255,47,147,0.5)]"
           onClick={openCheckout}
         >
-          ORDER AKSES SEKARANG
+          AMBIL AKSES SEKARANG
         </button>
       </div>
+
+      {selectedPreview !== null ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4">
+          <button
+            aria-label="Tutup preview"
+            className="absolute right-4 top-4 h-11 rounded-full bg-white px-5 text-sm font-black text-[#16091d]"
+            onClick={() => setSelectedPreview(null)}
+          >
+            Tutup
+          </button>
+          <button
+            aria-label="Preview sebelumnya"
+            className="absolute left-3 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full border border-white/20 bg-white/10 text-sm font-black text-white backdrop-blur"
+            onClick={showPreviousPreview}
+          >
+            Prev
+          </button>
+          <div className="max-h-[86vh] w-full max-w-[520px] overflow-hidden rounded-[24px] border border-pink-400/35 bg-black">
+            <Image
+              alt={`Preview halaman komik ${selectedPreview + 1}`}
+              className="h-auto max-h-[86vh] w-full object-contain"
+              height={1100}
+              src={previewPages[selectedPreview]}
+              width={820}
+            />
+          </div>
+          <button
+            aria-label="Preview berikutnya"
+            className="absolute right-3 top-1/2 z-10 h-12 w-12 -translate-y-1/2 rounded-full border border-white/20 bg-white/10 text-sm font-black text-white backdrop-blur"
+            onClick={showNextPreview}
+          >
+            Next
+          </button>
+        </div>
+      ) : null}
 
       <CheckoutSheet
         open={checkoutOpen}
@@ -259,13 +543,120 @@ export function LandingPage() {
   );
 }
 
-function ImageCard({ alt, src }: { alt: string; src: string }) {
+function CopySection({
+  eyebrow,
+  title,
+  children,
+  variant = "default",
+}: {
+  eyebrow: string;
+  title: string;
+  children: React.ReactNode;
+  variant?: "default" | "green";
+}) {
+  const variantClass =
+    variant === "green"
+      ? "border-[#3ddc97]/30 bg-[#07140f]"
+      : "border-[#ffd166]/30 bg-[#120914]";
+
+  return (
+    <section className="px-4 pt-8">
+      <div className={`rounded-[28px] border p-5 ${variantClass}`}>
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+          {eyebrow}
+        </p>
+        <h2 className="mt-2 text-2xl font-black">{title}</h2>
+        <div className="mt-3">{children}</div>
+      </div>
+    </section>
+  );
+}
+
+function CopyPoint({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone: "danger" | "success" | "plain";
+}) {
+  const color =
+    tone === "danger"
+      ? "border-red-400/20 bg-red-500/10"
+      : tone === "success"
+        ? "border-[#3ddc97]/25 bg-[#3ddc97]/10"
+        : "border-white/10 bg-white/5";
+
+  return (
+    <div className={`rounded-2xl border p-4 ${color}`}>
+      <p className="font-black text-white">{title}</p>
+      <p className="mt-1 text-sm leading-6 text-white/70">{body}</p>
+    </div>
+  );
+}
+
+function PreviewCarousel({
+  previews,
+  onSelect,
+}: {
+  previews: string[];
+  onSelect: (index: number) => void;
+}) {
+  return (
+    <section className="px-4 pt-8">
+      <div className="rounded-[28px] border border-pink-400/30 bg-[#140a17] p-5">
+        <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+          Preview pilihan komik
+        </p>
+        <h2 className="mt-2 text-2xl font-black">
+          Klik Untuk Lihat Contoh Halamannya
+        </h2>
+        <p className="mt-3 text-base leading-7 text-white/75">
+          Ini beberapa contoh halaman agar kamu kebayang rasa koleksinya sebelum
+          checkout.
+        </p>
+        <div className="-mx-5 mt-5 flex snap-x gap-3 overflow-x-auto px-5 pb-2">
+          {previews.map((src, index) => (
+            <button
+              className="w-[138px] shrink-0 snap-start overflow-hidden rounded-2xl border border-pink-400/30 bg-black text-left shadow-[0_0_20px_rgba(255,47,147,0.18)]"
+              key={src}
+              onClick={() => onSelect(index)}
+            >
+              <Image
+                alt={`Preview komik ${index + 1}`}
+                className="h-[184px] w-full object-cover"
+                height={360}
+                src={src}
+                width={260}
+              />
+              <span className="block px-3 py-2 text-xs font-black text-[#ffd166]">
+                Preview {index + 1}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ImageCard({
+  alt,
+  src,
+  priority,
+}: {
+  alt: string;
+  src: string;
+  priority?: boolean;
+}) {
   return (
     <div className="overflow-hidden rounded-[24px] border border-pink-400/25 bg-black shadow-[0_0_32px_rgba(255,47,147,0.18)]">
       <Image
         alt={alt}
         className="h-auto w-full"
         height={1024}
+        priority={priority}
         src={src}
         width={1024}
       />
