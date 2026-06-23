@@ -65,21 +65,6 @@ const addonItems = [
   ],
 ];
 
-const proofItems = [
-  [
-    "100+ Koleksi Digital",
-    "Isi paketnya bukan cuma beberapa file. Kamu mendapatkan koleksi besar dalam satu akses.",
-  ],
-  [
-    "Akses Setelah Pembayaran",
-    "Setelah pembayaran berhasil, kamu akan mendapatkan akses sesuai paket yang dipilih.",
-  ],
-  [
-    "Bisa Disimpan Pribadi",
-    "File bisa kamu download dan simpan untuk koleksi pribadi, jadi nggak perlu akses ulang dari banyak tempat.",
-  ],
-];
-
 const steps = [
   [
     "1",
@@ -134,6 +119,7 @@ const previewPages = [
 export function LandingPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState<number | null>(null);
+  const [driveProofOpen, setDriveProofOpen] = useState(false);
 
   useEffect(() => {
     void trackMetaEvent("ViewContent", {
@@ -302,18 +288,18 @@ export function LandingPage() {
         />
 
         <section className="px-4 pt-8">
-          <div className="rounded-[28px] bg-[#ff2f93] p-5 text-[#fff7fb]">
-            <p className="text-sm font-black uppercase tracking-[0.18em] text-white/75">
+          <div className="rounded-[28px] border border-[#ffd166]/30 bg-[#140a17] p-5 text-white shadow-[0_0_30px_rgba(255,209,102,0.08)]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
               Hitung sendiri value-nya
             </p>
             <h2 className="mt-2 text-2xl font-black">
               Kenapa Bundle Ini Worth It Banget?
             </h2>
-            <p className="mt-3 text-base font-semibold leading-7">
+            <p className="mt-3 text-base font-semibold leading-7 text-white/78">
               Karena kamu nggak cuma beli satu judul. Kamu ambil langsung
               koleksi besar yang bisa disimpan dan dibaca kapan saja.
             </p>
-            <div className="mt-5 rounded-3xl bg-[#2a111f] p-4">
+            <div className="mt-5 rounded-3xl border border-[#ffd166]/20 bg-[#211021] p-4">
               <p className="text-sm font-bold text-white/70">
                 Harga promo bundle
               </p>
@@ -321,7 +307,7 @@ export function LandingPage() {
               <p className="mt-1 text-sm font-bold text-white/70">
                 Untuk 100+ komik digital
               </p>
-              <div className="mt-4 rounded-2xl bg-[#451528] p-4">
+              <div className="mt-4 rounded-2xl border border-[#ffd166]/20 bg-[#33152b] p-4">
                 <p className="text-sm font-bold text-white/70">
                   Jatuhnya mulai dari sekitar
                 </p>
@@ -407,13 +393,23 @@ export function LandingPage() {
         <section className="px-4 pt-8">
           <div className="overflow-hidden rounded-[28px] border border-[#3ddc97]/30 bg-[#07140f] shadow-[0_0_32px_rgba(61,220,151,0.12)]">
             <div className="bg-white p-2">
-              <Image
-                alt="Screenshot daftar file koleksi komik di Google Drive"
-                className="h-auto w-full rounded-[18px]"
-                height={900}
-                src="/assets/drive-proof.png"
-                width={1600}
-              />
+              <button
+                aria-label="Lihat screenshot daftar file Google Drive"
+                className="group relative block w-full overflow-hidden rounded-[18px]"
+                onClick={() => setDriveProofOpen(true)}
+                type="button"
+              >
+                <Image
+                  alt="Screenshot daftar file koleksi komik di Google Drive"
+                  className="h-[230px] w-full object-cover object-left-top transition duration-300 group-hover:scale-[1.03]"
+                  height={900}
+                  src="/assets/drive-proof.png"
+                  width={1600}
+                />
+                <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/75 px-4 py-2 text-xs font-black uppercase tracking-[0.12em] text-white shadow-lg">
+                  Klik untuk zoom bukti file
+                </span>
+              </button>
             </div>
             <div className="p-5 text-center">
               <p className="inline-flex rounded-full border border-[#3ddc97]/40 bg-[#3ddc97]/10 px-4 py-2 text-xs font-black uppercase tracking-[0.16em] text-[#75ffbd]">
@@ -447,25 +443,6 @@ export function LandingPage() {
             </div>
           </div>
         </section>
-
-        <CopySection
-          eyebrow="Bukan produk kosong"
-          title="Koleksinya Banyak, Bukan Cuma Janji!"
-          variant="green"
-        >
-          <p className="text-base leading-7 text-white/75">
-            Bundle ini berisi 100+ file komik digital yang sudah dikumpulkan
-            dalam satu akses agar kamu nggak perlu cari manual satu-satu lagi.
-          </p>
-          <div className="mt-4 space-y-3">
-            {proofItems.map(([title, body]) => (
-              <CopyPoint body={body} key={title} tone="success" title={title} />
-            ))}
-          </div>
-          <p className="mt-5 text-base font-black text-[#ffd166]">
-            Jadi sebelum bayar, kamu sudah tahu value yang kamu ambil.
-          </p>
-        </CopySection>
 
         <CopySection
           eyebrow="Cara aksesnya gampang"
@@ -583,6 +560,28 @@ export function LandingPage() {
           >
             Next
           </button>
+        </div>
+      ) : null}
+
+      {driveProofOpen ? (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/90 p-4">
+          <button
+            aria-label="Tutup bukti file"
+            className="absolute right-4 top-4 h-11 rounded-full bg-white px-5 text-sm font-black text-[#16091d]"
+            onClick={() => setDriveProofOpen(false)}
+            type="button"
+          >
+            Tutup
+          </button>
+          <div className="max-h-[86vh] w-full max-w-[920px] overflow-auto rounded-[24px] border border-[#3ddc97]/35 bg-white p-2">
+            <Image
+              alt="Screenshot daftar file koleksi komik di Google Drive"
+              className="h-auto max-h-[82vh] w-full object-contain"
+              height={900}
+              src="/assets/drive-proof.png"
+              width={1600}
+            />
+          </div>
         </div>
       ) : null}
 
