@@ -21,6 +21,22 @@ type QrisResponse = {
   xenditPaymentId: string;
 };
 
+const paymentMethods = [
+  "BCA",
+  "Mandiri",
+  "BRI",
+  "BNI",
+  "BSI",
+  "CIMB",
+  "SeaBank",
+  "Jago",
+  "GoPay",
+  "DANA",
+  "OVO",
+  "ShopeePay",
+  "LinkAja",
+];
+
 export function CheckoutSheet({
   open,
   onClose,
@@ -266,21 +282,59 @@ export function CheckoutSheet({
 
         {step === "method" && (
           <div className="space-y-4">
-            <div className="rounded-3xl border border-[#ffd166]/50 bg-[#ffd166]/10 p-4">
-              <div className="flex items-center justify-between gap-3">
+            <div className="rounded-3xl border-2 border-[#ffd166] bg-[radial-gradient(circle_at_top_left,rgba(255,209,102,0.26),rgba(255,209,102,0.08)_42%,rgba(255,47,147,0.12))] p-4 shadow-[0_0_34px_rgba(255,209,102,0.18)]">
+              <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-lg font-black text-white">QRIS</p>
+                  <div className="inline-flex rounded-full bg-[#ffd166] px-3 py-1 text-xs font-black tracking-[0.16em] text-[#150814]">
+                    PALING CEPAT & DIREKOMENDASIKAN
+                  </div>
+                  <p className="mt-3 text-3xl font-black text-white">QRIS</p>
                   <p className="mt-1 text-sm leading-6 text-white/70">
-                    Bayar pakai mobile banking atau e-wallet yang mendukung QRIS.
+                    Scan sekali, bayar dari hampir semua mobile banking dan
+                    e-wallet. Konfirmasi otomatis setelah pembayaran sukses.
                   </p>
                 </div>
-                <div className="rounded-full bg-[#ffd166] px-3 py-1 text-xs font-black text-[#150814]">
+                <div className="shrink-0 rounded-full bg-emerald-400 px-3 py-1 text-xs font-black text-[#06120e]">
                   Aktif
                 </div>
               </div>
+              <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-black text-white">
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                  24 JAM
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                  OTOMATIS
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-black/25 p-3">
+                  AMAN
+                </div>
+              </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/5 p-4 text-sm text-white/65">
-              Pembayaran diproses aman melalui payment gateway.
+
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-sm font-black text-white">
+                Bisa bayar pakai aplikasi ini:
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {paymentMethods.map((method) => (
+                  <span
+                    className="rounded-full border border-white/10 bg-white/8 px-3 py-2 text-xs font-black text-white/82"
+                    key={method}
+                  >
+                    {method}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-3 text-xs leading-5 text-white/58">
+                Pilih menu Scan QRIS di aplikasi bank/e-wallet kamu. Tidak perlu
+                transfer manual dan tidak perlu kirim bukti bayar.
+              </p>
+            </div>
+
+            <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm leading-6 text-emerald-50">
+              Pembayaran diproses aman melalui payment gateway. Setelah status
+              paid terdeteksi, link akses otomatis dikirim ke email yang kamu
+              isi tadi.
             </div>
             <button
               className="h-14 w-full rounded-2xl bg-[#ffd166] text-base font-black text-[#16091d] disabled:opacity-60"
