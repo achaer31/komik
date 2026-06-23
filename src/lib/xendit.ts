@@ -13,7 +13,6 @@ type XenditQrCodeResponse = {
 };
 
 export const VIRTUAL_ACCOUNT_BANKS = [
-  { code: "BCA", name: "BCA Virtual Account" },
   { code: "BNI", name: "BNI Virtual Account" },
   { code: "BRI", name: "BRI Virtual Account" },
   { code: "MANDIRI", name: "Mandiri Virtual Account" },

@@ -32,7 +32,6 @@ type VaResponse = {
 };
 
 const virtualAccountBanks = [
-  ["BCA", "BCA Virtual Account"],
   ["BNI", "BNI Virtual Account"],
   ["BRI", "BRI Virtual Account"],
   ["MANDIRI", "Mandiri Virtual Account"],
