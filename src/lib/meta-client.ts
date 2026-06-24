@@ -15,7 +15,8 @@ export type MetaClientEventName =
   | "ViewContent"
   | "InitiateCheckout"
   | "AddToCart"
-  | "AddPaymentInfo";
+  | "AddPaymentInfo"
+  | "Purchase";
 
 export function createEventId(eventName: string) {
   return `${eventName}_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
@@ -33,8 +34,9 @@ export async function trackMetaEvent(
   eventName: MetaClientEventName,
   customData: Record<string, unknown> = {},
   email?: string,
+  providedEventId?: string,
 ) {
-  const eventId = createEventId(eventName);
+  const eventId = providedEventId ?? createEventId(eventName);
 
   window.fbq?.("track", eventName, customData, { eventID: eventId });
 

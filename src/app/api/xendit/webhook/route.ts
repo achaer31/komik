@@ -96,20 +96,28 @@ export async function POST(request: Request) {
       }
     }
 
-    await sendMetaEvent({
-      eventName: "Purchase",
-      eventId: `purchase_${externalId}`,
-      email: order.email,
-      customData: {
-        content_name: order.include_addon
-          ? "Komik Fantasi Digital + Video Add-on"
-          : "100+ Komik Fantasi Digital Pilihan 2026",
-        content_type: "product",
-        currency: "IDR",
-        value: order.amount,
-        order_id: externalId,
-      },
-    });
+    try {
+      await sendMetaEvent({
+        eventName: "Purchase",
+        eventId: `purchase_${externalId}`,
+        email: order.email,
+        eventSourceUrl: `${
+          process.env.NEXT_PUBLIC_SITE_URL || "https://komikpilihanku.site"
+        }/success?order=${encodeURIComponent(externalId)}`,
+        customData: {
+          content_name: order.include_addon
+            ? "Komik Fantasi Digital + Video Add-on"
+            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_type: "product",
+          currency: "IDR",
+          value: order.amount,
+          order_id: externalId,
+          num_items: order.include_addon ? 2 : 1,
+        },
+      });
+    } catch (metaError) {
+      console.error("Meta Purchase event failed", metaError);
+    }
 
     return NextResponse.json({ received: true });
   } catch {
