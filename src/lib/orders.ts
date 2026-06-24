@@ -35,6 +35,10 @@ export type OrderRecord = {
   email_sent_at?: string | null;
   email_status?: EmailDeliveryStatus | null;
   email_message_id?: string | null;
+  invoice_email_message_id?: string | null;
+  invoice_email_sent_at?: string | null;
+  access_email_message_id?: string | null;
+  access_email_sent_at?: string | null;
   email_processed_at?: string | null;
   email_delivered_at?: string | null;
   email_opened_at?: string | null;
@@ -72,6 +76,10 @@ type OrderUpdate = Partial<
     | "email_sent_at"
     | "email_status"
     | "email_message_id"
+    | "invoice_email_message_id"
+    | "invoice_email_sent_at"
+    | "access_email_message_id"
+    | "access_email_sent_at"
     | "email_processed_at"
     | "email_delivered_at"
     | "email_opened_at"
@@ -258,18 +266,108 @@ export async function recordResendEmailEvent(event: ResendEventRecord) {
   const update = getEmailEventUpdate(event.type, event.createdAt);
   if (!update) return;
 
-  const query = supabase
-    .from("orders")
-    .update({ ...update, updated_at: new Date().toISOString() });
-
   if (event.emailId) {
-    await query.eq("email_message_id", event.emailId);
-    return;
+    const byMessageId = await supabase
+      .from("orders")
+      .select("id,email_status")
+      .or(
+        [
+          `email_message_id.eq.${event.emailId}`,
+          `invoice_email_message_id.eq.${event.emailId}`,
+          `access_email_message_id.eq.${event.emailId}`,
+        ].join(","),
+      );
+
+    if (byMessageId.error) {
+      throw new Error(byMessageId.error.message);
+    }
+
+    const matches = byMessageId.data ?? [];
+    if (matches.length > 0) {
+      await Promise.all(
+        matches.map((order) =>
+          updateOrderEmailEventById(
+            String(order.id),
+            mergeEmailStatusUpdate(
+              update,
+              normalizeEmailStatus(order.email_status as string | undefined),
+            ),
+          ),
+        ),
+      );
+      return;
+    }
   }
 
   if (event.recipient) {
-    await query.eq("email", event.recipient).is("email_message_id", null);
+    const { data, error } = await supabase
+      .from("orders")
+      .select("id,email_status")
+      .eq("email", event.recipient)
+      .order("created_at", { ascending: false })
+      .limit(10);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await Promise.all(
+      (data ?? []).map((order) =>
+        updateOrderEmailEventById(
+          String(order.id),
+          mergeEmailStatusUpdate(
+            update,
+            normalizeEmailStatus(order.email_status as string | undefined),
+          ),
+        ),
+      ),
+    );
   }
+}
+
+async function updateOrderEmailEventById(id: string, update: OrderUpdate) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from("orders")
+    .update({ ...update, updated_at: new Date().toISOString() })
+    .eq("id", id);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+function mergeEmailStatusUpdate(
+  update: OrderUpdate,
+  currentStatus: EmailDeliveryStatus,
+) {
+  if (!update.email_status) return update;
+  return {
+    ...update,
+    email_status: highestEmailStatus(currentStatus, update.email_status),
+  };
+}
+
+function highestEmailStatus(
+  currentStatus: EmailDeliveryStatus,
+  nextStatus: EmailDeliveryStatus,
+) {
+  const priority: Record<EmailDeliveryStatus, number> = {
+    NOT_SENT: 0,
+    SENT: 1,
+    DELAYED: 2,
+    DELIVERED: 3,
+    OPENED: 4,
+    CLICKED: 5,
+    FAILED: 10,
+    BOUNCED: 10,
+    COMPLAINED: 10,
+    SUPPRESSED: 10,
+  };
+
+  return priority[nextStatus] >= priority[currentStatus]
+    ? nextStatus
+    : currentStatus;
 }
 
 function getEmailEventUpdate(

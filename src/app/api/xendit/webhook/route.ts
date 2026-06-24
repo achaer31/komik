@@ -62,11 +62,12 @@ export async function POST(request: Request) {
           : order.payment_channel,
     });
 
-    if (!order.email_sent_at) {
+    if (order.status !== "PAID" || !order.access_email_sent_at) {
       try {
         const sentAt = new Date().toISOString();
         const emailResult = await sendAccessEmail({
           to: order.email,
+          externalId,
           includeAddon: order.include_addon,
         });
 
@@ -74,6 +75,8 @@ export async function POST(request: Request) {
           email_sent_at: sentAt,
           email_status: "SENT",
           email_message_id: emailResult.id,
+          access_email_message_id: emailResult.id,
+          access_email_sent_at: sentAt,
           email_processed_at: sentAt,
           email_last_event: "email.sent",
           email_last_event_at: sentAt,

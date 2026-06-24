@@ -26,18 +26,27 @@ export async function POST(request: Request) {
       webhookSecret,
     });
 
-    const data = event.data as {
-      email_id?: string;
-      to?: string[];
+    const eventRecord = event as unknown as {
+      type?: string;
       created_at?: string;
+      data?: Record<string, unknown>;
     };
+    const data = eventRecord.data ?? {};
 
     await recordResendEmailEvent({
-      id: request.headers.get("webhook-id") ?? `${event.type}-${event.created_at}`,
-      type: event.type,
-      createdAt: event.created_at ?? data.created_at ?? new Date().toISOString(),
-      emailId: data.email_id ?? null,
-      recipient: data.to?.[0]?.toLowerCase() ?? null,
+      id:
+        request.headers.get("webhook-id") ??
+        `${eventRecord.type}-${eventRecord.created_at ?? Date.now()}`,
+      type: eventRecord.type ?? "email.unknown",
+      createdAt:
+        eventRecord.created_at ??
+        readString(data.created_at) ??
+        new Date().toISOString(),
+      emailId:
+        readString(data.email_id) ??
+        readString(data.emailId) ??
+        readString(data.id),
+      recipient: extractRecipient(data),
       payload: event as unknown as Record<string, unknown>,
     });
 
@@ -51,4 +60,28 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   }
+}
+
+function readString(value: unknown) {
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function extractRecipient(data: Record<string, unknown>) {
+  const direct =
+    readString(data.recipient) ??
+    readString(data.email) ??
+    readString(data.to);
+
+  if (direct) return direct.toLowerCase();
+
+  if (Array.isArray(data.to)) {
+    const first = data.to[0];
+    if (typeof first === "string") return first.toLowerCase();
+    if (first && typeof first === "object") {
+      const email = readString((first as Record<string, unknown>).email);
+      if (email) return email.toLowerCase();
+    }
+  }
+
+  return null;
 }
