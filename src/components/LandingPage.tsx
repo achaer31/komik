@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { trackMetaEvent } from "@/lib/meta-client";
 import {
@@ -138,6 +138,19 @@ const previewPages = [
   "/assets/previews/preview-14.png",
   "/assets/previews/preview-15.png",
   "/assets/previews/preview-16.png",
+];
+
+const videoPreviews = [
+  { id: "0bwkN8XAq-M", title: "Preview video komik 1" },
+  { id: "-8MW4XzP2NM", title: "Preview video komik 2" },
+  { id: "EDT2x_nhZgc", title: "Preview video komik 3" },
+  { id: "a1Vhd85tcu8", title: "Preview video komik 4" },
+  { id: "FqnTRMftnpo", title: "Preview video komik 5" },
+  { id: "-OdICJ1r0GU", title: "Preview video komik 6" },
+  { id: "4eZ_9hkrNVI", title: "Preview video komik 7" },
+  { id: "kNsnHVb7y5c", title: "Preview video komik 8" },
+  { id: "QfmR7cq4ikg", title: "Preview video komik 9" },
+  { id: "cblOKPrmE20", title: "Preview video komik 10" },
 ];
 
 export function LandingPage() {
@@ -415,17 +428,7 @@ export function LandingPage() {
                 <CopyPoint body={body} key={title} tone="success" title={title} />
               ))}
             </div>
-            <div className="mt-5 overflow-hidden rounded-[22px] border border-pink-400/30 bg-black shadow-[0_0_28px_rgba(255,47,147,0.22)]">
-              <iframe
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowFullScreen
-                className="aspect-video w-full"
-                loading="lazy"
-                referrerPolicy="strict-origin-when-cross-origin"
-                src="https://www.youtube.com/embed/videoseries?list=PLY7oNld5yxvpke8b_VP-GRs50afLUPAi5"
-                title="Preview playlist 100+ video komik fantasi 2026"
-              />
-            </div>
+            <VideoCarousel videos={videoPreviews} />
             <p className="mt-5 text-base font-black text-[#ffd166]">
               Bundle utama + add-on video = koleksi lebih lengkap.
             </p>
@@ -871,6 +874,127 @@ function PreviewCarousel({
         </div>
       </div>
     </section>
+  );
+}
+
+function VideoCarousel({
+  videos,
+}: {
+  videos: { id: string; title: string }[];
+}) {
+  const railRef = useRef<HTMLDivElement>(null);
+  const activeIndexRef = useRef(0);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  const goToVideo = useCallback((index: number) => {
+    const rail = railRef.current;
+    const firstItem = rail?.querySelector("article");
+    const itemWidth =
+      firstItem instanceof HTMLElement ? firstItem.offsetWidth + 12 : 318;
+
+    activeIndexRef.current = index;
+    setActiveIndex(index);
+    rail?.scrollTo({
+      behavior: "smooth",
+      left: index * itemWidth,
+    });
+  }, []);
+
+  useEffect(() => {
+    if (paused || videos.length < 2) return;
+
+    const interval = window.setInterval(() => {
+      goToVideo((activeIndexRef.current + 1) % videos.length);
+    }, 5200);
+
+    return () => window.clearInterval(interval);
+  }, [goToVideo, paused, videos.length]);
+
+  return (
+    <div className="mt-5 rounded-[24px] border border-pink-400/30 bg-[radial-gradient(circle_at_top,rgba(255,47,147,0.16),#08040b_60%)] p-4 shadow-[0_0_28px_rgba(255,47,147,0.22)]">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffd166]">
+            Preview video add-on
+          </p>
+          <p className="mt-1 text-sm font-bold text-white/70">
+            Swipe untuk lihat 10 contoh video.
+          </p>
+        </div>
+        <div className="shrink-0 rounded-full border border-[#ffd166]/40 bg-[#ffd166]/12 px-3 py-2 text-center">
+          <p className="text-lg font-black text-[#ffd166]">{videos.length}</p>
+          <p className="text-[10px] font-black uppercase tracking-[0.12em] text-white/58">
+            Video
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-3 flex items-center gap-2 rounded-2xl border border-white/10 bg-white/5 px-3 py-2 text-xs font-black text-white/68">
+        <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" />
+        Auto-scroll aktif - tap video untuk play
+      </div>
+
+      <div
+        className="-mx-4 flex snap-x gap-3 overflow-x-auto px-4 pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        ref={railRef}
+        onMouseEnter={() => setPaused(true)}
+        onMouseLeave={() => setPaused(false)}
+        onTouchStart={() => setPaused(true)}
+        onTouchEnd={() => setPaused(false)}
+      >
+        {videos.map((video, index) => (
+          <article
+            className={`w-[318px] shrink-0 snap-center overflow-hidden rounded-[22px] border bg-black shadow-[0_0_22px_rgba(255,47,147,0.2)] transition duration-300 ${
+              activeIndex === index
+                ? "border-[#ffd166] shadow-[0_0_28px_rgba(255,209,102,0.24)]"
+                : "border-pink-400/30"
+            }`}
+            key={video.id}
+          >
+            <div className="relative aspect-video w-full bg-black">
+              <iframe
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                className="absolute inset-0 h-full w-full"
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                src={`https://www.youtube.com/embed/${video.id}`}
+                title={video.title}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div>
+                <p className="text-sm font-black text-white">
+                  Video Preview {index + 1}
+                </p>
+                <p className="mt-1 text-xs font-bold text-white/50">
+                  Contoh isi add-on video komik
+                </p>
+              </div>
+              <span className="rounded-full bg-[#ffd166] px-3 py-1 text-xs font-black text-[#16091d]">
+                Play
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+
+      <div className="mt-3 flex justify-center gap-2">
+        {videos.map((video, index) => (
+          <button
+            aria-label={`Lihat video preview ${index + 1}`}
+            className={`h-2 rounded-full transition-all ${
+              activeIndex === index
+                ? "w-7 bg-[#ffd166]"
+                : "w-2 bg-white/25"
+            }`}
+            key={video.id}
+            onClick={() => goToVideo(index)}
+          />
+        ))}
+      </div>
+    </div>
   );
 }
 
