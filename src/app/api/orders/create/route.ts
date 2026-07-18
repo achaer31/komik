@@ -12,21 +12,24 @@ export async function POST(request: Request) {
     const body = (await request.json()) as {
       email?: string;
       includeAddon?: boolean;
+      includeVvip?: boolean;
     };
 
     const email = body.email?.trim().toLowerCase() || "";
     const includeAddon = Boolean(body.includeAddon);
+    const includeVvip = Boolean(body.includeVvip);
 
     if (!isValidEmail(email)) {
       return NextResponse.json({ error: "Email tidak valid." }, { status: 400 });
     }
 
     const externalId = createExternalId();
-    const amount = calculateAmount(includeAddon);
+    const amount = calculateAmount({ includeAddon, includeVvip });
     const order = await createOrder({
       external_id: externalId,
       email,
       include_addon: includeAddon,
+      include_vvip: includeVvip,
       amount,
       status: "PENDING",
     });
@@ -38,6 +41,7 @@ export async function POST(request: Request) {
         externalId: order.external_id,
         amount: order.amount,
         includeAddon: order.include_addon,
+        includeVvip: order.include_vvip,
       });
 
       await updateOrderByExternalId(order.external_id, {
@@ -69,6 +73,7 @@ export async function POST(request: Request) {
       external_id: order.external_id,
       amount: order.amount,
       includeAddon: order.include_addon,
+      includeVvip: order.include_vvip,
       status: order.status,
     });
   } catch (error) {

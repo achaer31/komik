@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { EmailDeliveryStatus, OrderRecord } from "@/lib/orders";
-import { formatRupiah } from "@/lib/products";
+import { describeOrder, formatRupiah } from "@/lib/products";
 import { logoutAdmin } from "./actions";
 
 type AdminOrdersSnapshot = {
@@ -375,9 +375,10 @@ function OrderCard({
             </div>
             <p className="mt-1 text-sm text-[#6f8780]">{order.external_id}</p>
             <p className="mt-2 text-sm font-bold text-[#33473f]">
-              {order.include_addon
-                ? "Bundle komik + video add-on"
-                : "100+ Komik Fantasi Dewasa"}
+              {describeOrder({
+                includeAddon: order.include_addon,
+                includeVvip: order.include_vvip,
+              })}
             </p>
             <p className="mt-1 text-sm text-[#78908a]">
               {formatDateTime(order.created_at)} - {formatRupiah(order.amount)}
@@ -478,9 +479,10 @@ function OrderDetail({ order }: { order: OrderRecord | null }) {
           />
           <div>
             <p className="font-black">
-              {order.include_addon
-                ? "100+ Komik + 100+ Video Komik"
-                : "100+ Komik Fantasi Dewasa"}
+              {describeOrder({
+                includeAddon: order.include_addon,
+                includeVvip: order.include_vvip,
+              })}
             </p>
             <p className="mt-1 text-sm text-[#6f8780]">
               {formatRupiah(order.amount)}

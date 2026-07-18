@@ -1,7 +1,20 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { formatRupiah } from "@/lib/products";
+import {
+  ADDON_PRODUCT_NORMAL_PRICE,
+  ADDON_PRODUCT_PRICE,
+  MAIN_PRODUCT_NORMAL_PRICE,
+  MAIN_PRODUCT_PRICE,
+  VVIP_PRODUCT_NORMAL_PRICE,
+  VVIP_PRODUCT_PRICE,
+  calculateAmount,
+  calculateNormalAmount,
+  calculateSavings,
+  countOrderItems,
+  describeOrder,
+  formatRupiah,
+} from "@/lib/products";
 import { trackMetaEvent } from "@/lib/meta-client";
 
 type Step = "email" | "method" | "qris" | "va" | "success";
@@ -10,6 +23,7 @@ type OrderResponse = {
   external_id: string;
   amount: number;
   includeAddon: boolean;
+  includeVvip: boolean;
   status: string;
 };
 
@@ -48,6 +62,7 @@ export function CheckoutSheet({
   const [step, setStep] = useState<Step>("email");
   const [email, setEmail] = useState("");
   const [includeAddon, setIncludeAddon] = useState(false);
+  const [includeVvip, setIncludeVvip] = useState(false);
   const [order, setOrder] = useState<OrderResponse | null>(null);
   const [qris, setQris] = useState<QrisResponse | null>(null);
   const [va, setVa] = useState<VaResponse | null>(null);
@@ -55,18 +70,40 @@ export function CheckoutSheet({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState(false);
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const [checkoutEndsAt, setCheckoutEndsAt] = useState(
+    () => Date.now() + 15 * 60 * 1000,
+  );
 
-  const total = includeAddon ? 249_800 : 149_900;
-  const remainingSeconds = useMemo(() => {
+  const orderOptions = { includeAddon, includeVvip };
+  const total = calculateAmount(orderOptions);
+  const normalTotal = calculateNormalAmount(orderOptions);
+  const savings = calculateSavings(orderOptions);
+  const checkoutRemainingSeconds = useMemo(() => {
+    return Math.max(0, Math.floor((checkoutEndsAt - now) / 1000));
+  }, [checkoutEndsAt, now]);
+  const activeOrderOptions = order
+    ? { includeAddon: order.includeAddon, includeVvip: order.includeVvip }
+    : orderOptions;
+  const activeNormalTotal = calculateNormalAmount(activeOrderOptions);
+  const activeSavings = calculateSavings(activeOrderOptions);
+  const paymentRemainingSeconds = useMemo(() => {
     if (!qris?.expiresAt) return 0;
     return Math.max(0, Math.floor((Date.parse(qris.expiresAt) - now) / 1000));
   }, [now, qris?.expiresAt]);
 
   useEffect(() => {
     if (!open) return;
+    const resetTimer = window.setTimeout(() => {
+      const currentTime = Date.now();
+      setNow(currentTime);
+      setCheckoutEndsAt(currentTime + 15 * 60 * 1000);
+    }, 0);
     const interval = window.setInterval(() => setNow(Date.now()), 1000);
-    return () => window.clearInterval(interval);
+    return () => {
+      window.clearTimeout(resetTimer);
+      window.clearInterval(interval);
+    };
   }, [open]);
 
   useEffect(() => {
@@ -119,7 +156,7 @@ export function CheckoutSheet({
       const response = await fetch("/api/orders/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, includeAddon }),
+        body: JSON.stringify({ email, includeAddon, includeVvip }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Gagal membuat order.");
@@ -127,13 +164,11 @@ export function CheckoutSheet({
       void trackMetaEvent(
         "AddToCart",
         {
-          content_name: includeAddon
-            ? "Komik Fantasi Digital + Video Add-on"
-            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_name: describeOrder(orderOptions),
           content_type: "product",
           currency: "IDR",
           value: total,
-          num_items: includeAddon ? 2 : 1,
+          num_items: countOrderItems(orderOptions),
         },
         email,
       );
@@ -161,9 +196,10 @@ export function CheckoutSheet({
       void trackMetaEvent(
         "AddPaymentInfo",
         {
-          content_name: order.includeAddon
-            ? "Komik Fantasi Digital + Video Add-on"
-            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_name: describeOrder({
+            includeAddon: order.includeAddon,
+            includeVvip: order.includeVvip,
+          }),
           content_type: "product",
           currency: "IDR",
           value: order.amount,
@@ -201,9 +237,10 @@ export function CheckoutSheet({
       void trackMetaEvent(
         "AddPaymentInfo",
         {
-          content_name: order.includeAddon
-            ? "Komik Fantasi Digital + Video Add-on"
-            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_name: describeOrder({
+            includeAddon: order.includeAddon,
+            includeVvip: order.includeVvip,
+          }),
           content_type: "product",
           currency: "IDR",
           value: order.amount,
@@ -291,6 +328,7 @@ export function CheckoutSheet({
 
         {step === "email" && (
           <div className="space-y-4">
+            <DealTimer seconds={checkoutRemainingSeconds} />
             <label className="block">
               <span className="mb-2 block text-sm font-bold text-white">
                 Email aktif
@@ -304,35 +342,119 @@ export function CheckoutSheet({
                 onChange={(event) => setEmail(event.target.value)}
               />
             </label>
-            <label className="flex gap-3 rounded-2xl border border-pink-300/30 bg-pink-400/10 p-4">
-              <input
-                className="mt-1 size-5 accent-pink-500"
-                checked={includeAddon}
-                type="checkbox"
-                onChange={(event) => setIncludeAddon(event.target.checked)}
-              />
-              <span className="text-sm font-semibold text-white">
-                Tambah 100+ Video Komik Fantasi 2026 (+Rp99.900)
-              </span>
+            <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm font-bold leading-6 text-emerald-50">
+              File komik, video, dan akses tambahan baru dikirim setelah status
+              pembayaran selesai/paid. Pastikan email aktif karena invoice dan
+              akses otomatis dikirim ke email ini.
+            </div>
+            <div className="rounded-2xl border border-[#ffd166]/30 bg-[#ffd166]/10 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffd166]">
+                Paket utama hari ini
+              </p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div>
+                  <p className="font-black text-white">
+                    100+ Komik Fantasi Dewasa
+                  </p>
+                  <p className="mt-1 text-sm text-white/55 line-through">
+                    Normal {formatRupiah(MAIN_PRODUCT_NORMAL_PRICE)}
+                  </p>
+                </div>
+                <p className="text-xl font-black text-[#ffd166]">
+                  {formatRupiah(MAIN_PRODUCT_PRICE)}
+                </p>
+              </div>
+            </div>
+            <label className="block rounded-2xl border border-pink-300/30 bg-pink-400/10 p-4">
+              <div className="flex gap-3">
+                <input
+                  className="mt-1 size-5 accent-pink-500"
+                  checked={includeAddon}
+                  type="checkbox"
+                  onChange={(event) => setIncludeAddon(event.target.checked)}
+                />
+                <span className="flex-1 text-sm font-semibold text-white">
+                  <span className="block font-black">
+                    Tambah 100+ Video Komik Fantasi 2026
+                  </span>
+                  <span className="mt-1 block text-white/55 line-through">
+                    Normal {formatRupiah(ADDON_PRODUCT_NORMAL_PRICE)}
+                  </span>
+                  <span className="block text-[#ffd166]">
+                    Hari ini cukup tambah {formatRupiah(ADDON_PRODUCT_PRICE)}
+                  </span>
+                </span>
+              </div>
+            </label>
+            <label className="block rounded-2xl border border-[#ffd166]/35 bg-[#ffd166]/10 p-4">
+              <div className="flex gap-3">
+                <input
+                  className="mt-1 size-5 accent-pink-500"
+                  checked={includeVvip}
+                  type="checkbox"
+                  onChange={(event) => setIncludeVvip(event.target.checked)}
+                />
+                <span className="flex-1 text-sm font-semibold text-white">
+                  <span className="block font-black">
+                    VVIP Grup Tele Update Setiap Hari
+                  </span>
+                  <span className="mt-1 block text-white/55 line-through">
+                    Normal {formatRupiah(VVIP_PRODUCT_NORMAL_PRICE)}
+                  </span>
+                  <span className="block text-[#ffd166]">
+                    Hari ini cukup tambah {formatRupiah(VVIP_PRODUCT_PRICE)}
+                  </span>
+                </span>
+              </div>
             </label>
             <div className="rounded-2xl bg-white/5 p-4">
-              <p className="text-sm text-white/65">Total pembayaran</p>
-              <p className="text-3xl font-black text-[#ffd166]">
-                {formatRupiah(total)}
-              </p>
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm text-white/65">Harga normal total</p>
+                <p className="text-sm font-bold text-white/45 line-through">
+                  {formatRupiah(normalTotal)}
+                </p>
+              </div>
+              <div className="mt-2 flex items-center justify-between gap-3">
+                <p className="text-sm text-white/65">Total pembayaran</p>
+                <p className="text-3xl font-black text-[#ffd166]">
+                  {formatRupiah(total)}
+                </p>
+              </div>
+              <div className="mt-3 rounded-xl border border-emerald-300/25 bg-emerald-400/10 px-3 py-2 text-sm font-black text-emerald-100">
+                Kamu hemat {formatRupiah(savings)} kalau bayar sekarang.
+              </div>
             </div>
             <button
               className="h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_28px_rgba(255,47,147,0.5)] disabled:opacity-60"
               disabled={loading}
               onClick={submitEmail}
             >
-              {loading ? "MEMPROSES..." : "LANJUT PILIH PEMBAYARAN"}
+              {loading ? "MEMPROSES..." : "KUNCI PROMO & LANJUT BAYAR"}
             </button>
           </div>
         )}
 
         {step === "method" && (
           <div className="space-y-4">
+            <DealTimer seconds={checkoutRemainingSeconds} />
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+              <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffd166]">
+                Ringkasan hemat hari ini
+              </p>
+              <div className="mt-3 flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-sm text-white/55 line-through">
+                    Normal {formatRupiah(activeNormalTotal)}
+                  </p>
+                  <p className="mt-1 text-sm font-bold text-emerald-100">
+                    Hemat {formatRupiah(activeSavings)}
+                  </p>
+                </div>
+                <p className="text-3xl font-black text-[#ffd166]">
+                  {formatRupiah(order?.amount ?? total)}
+                </p>
+              </div>
+            </div>
             <div className="rounded-3xl border-2 border-[#ffd166] bg-[radial-gradient(circle_at_top_left,rgba(255,209,102,0.26),rgba(255,209,102,0.08)_42%,rgba(255,47,147,0.12))] p-4 shadow-[0_0_34px_rgba(255,209,102,0.18)]">
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -453,10 +575,14 @@ export function CheckoutSheet({
               <div className="rounded-2xl bg-white/5 p-3">
                 <p className="text-white/55">Sisa waktu</p>
                 <p className="font-black text-white">
-                  {Math.floor(remainingSeconds / 60)}:
-                  {String(remainingSeconds % 60).padStart(2, "0")}
+                  {formatCountdown(paymentRemainingSeconds)}
                 </p>
               </div>
+            </div>
+            <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm font-bold leading-6 text-emerald-50">
+              Setelah status pembayaran selesai/paid, akses file otomatis
+              dikirim ke email kamu. Total hemat hari ini{" "}
+              {formatRupiah(activeSavings)} dibanding harga normal.
             </div>
             <div className="rounded-2xl bg-white/5 p-3 text-xs text-white/70">
               <p className="mb-2 font-bold text-white">Order ID</p>
@@ -520,6 +646,11 @@ export function CheckoutSheet({
                 <p className="font-black text-white">{va.bankCode}</p>
               </div>
             </div>
+            <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-4 text-sm font-bold leading-6 text-emerald-50">
+              Setelah status pembayaran selesai/paid, akses file otomatis
+              dikirim ke email kamu. Total hemat hari ini{" "}
+              {formatRupiah(activeSavings)} dibanding harga normal.
+            </div>
             <ol className="space-y-2 rounded-2xl bg-white/5 p-4 text-sm text-white/80">
               <li>1. Buka mobile banking/ATM/internet banking</li>
               <li>2. Pilih menu Virtual Account atau transfer VA</li>
@@ -556,4 +687,34 @@ export function CheckoutSheet({
       </div>
     </div>
   );
+}
+
+function DealTimer({ seconds }: { seconds: number }) {
+  return (
+    <div className="rounded-2xl border border-[#ffd166]/35 bg-[#ffd166]/10 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-xs font-black uppercase tracking-[0.16em] text-[#ffd166]">
+            Promo checkout aktif
+          </p>
+          <p className="mt-1 text-sm font-bold leading-5 text-white/72">
+            Harga diskon dikunci kalau pembayaran diselesaikan hari ini.
+          </p>
+        </div>
+        <div className="rounded-2xl bg-[#ffd166] px-4 py-3 text-center text-[#16091d]">
+          <p className="text-[10px] font-black uppercase tracking-[0.12em]">
+            Sisa
+          </p>
+          <p className="text-lg font-black">{formatCountdown(seconds)}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function formatCountdown(seconds: number) {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }

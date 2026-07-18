@@ -4,6 +4,15 @@ import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { CheckoutSheet } from "./CheckoutSheet";
 import { trackMetaEvent } from "@/lib/meta-client";
+import {
+  ADDON_PRODUCT_NORMAL_PRICE,
+  ADDON_PRODUCT_PRICE,
+  MAIN_PRODUCT_NORMAL_PRICE,
+  MAIN_PRODUCT_PRICE,
+  VVIP_PRODUCT_NORMAL_PRICE,
+  VVIP_PRODUCT_PRICE,
+  formatRupiah,
+} from "@/lib/products";
 
 const benefits = [
   "100+ Koleksi",
@@ -65,11 +74,26 @@ const addonItems = [
   ],
 ];
 
+const vvipItems = [
+  [
+    "Update Tele Setiap Hari",
+    "Masuk grup VVIP untuk lihat update koleksi dan info tambahan tanpa harus cari manual lagi.",
+  ],
+  [
+    "Cocok Buat yang Mau Paling Lengkap",
+    "Ambil bundle utama, tambah video, lalu aktifkan VVIP supaya akses kamu lebih maksimal.",
+  ],
+  [
+    "Harga Add-On Khusus Checkout",
+    "Normalnya Rp299.900, tapi saat promo ini cukup tambah Rp99.900 di checkout.",
+  ],
+];
+
 const steps = [
   [
     "1",
     "Klik Tombol Beli",
-    "Pilih paket utama atau tambah add-on video kalau mau koleksi yang lebih lengkap.",
+    "Pilih paket utama, lalu tambah add-on video atau VVIP Tele kalau mau koleksi yang lebih lengkap.",
   ],
   [
     "2",
@@ -79,7 +103,7 @@ const steps = [
   [
     "3",
     "Dapat Link Akses",
-    "Setelah pembayaran sukses, kamu akan mendapatkan akses/download sesuai paket yang dibeli.",
+    "Setelah status pembayaran selesai/paid, file dan akses akan dikirim sesuai paket yang dibeli.",
   ],
   [
     "4",
@@ -120,13 +144,26 @@ export function LandingPage() {
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [selectedPreview, setSelectedPreview] = useState<number | null>(null);
   const [driveProofOpen, setDriveProofOpen] = useState(false);
+  const [promoRemaining, setPromoRemaining] = useState(15 * 60);
+
+  useEffect(() => {
+    const startedAt = Date.now();
+    const interval = window.setInterval(() => {
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000);
+      setPromoRemaining(Math.max(0, 15 * 60 - elapsed));
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const promoCountdown = formatCountdown(promoRemaining);
 
   useEffect(() => {
     void trackMetaEvent("ViewContent", {
       content_name: "100+ Komik Fantasi Digital Pilihan 2026",
       content_type: "product",
       currency: "IDR",
-      value: 149900,
+      value: MAIN_PRODUCT_PRICE,
     });
   }, []);
 
@@ -135,7 +172,7 @@ export function LandingPage() {
       content_name: "100+ Komik Fantasi Digital Pilihan 2026",
       content_type: "product",
       currency: "IDR",
-      value: 149900,
+      value: MAIN_PRODUCT_PRICE,
       num_items: 1,
     });
     setCheckoutOpen(true);
@@ -187,14 +224,20 @@ export function LandingPage() {
             </p>
             <div className="mt-5 overflow-hidden rounded-3xl border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-white/55 line-through">
-                Harga Normal Rp299.900
+                Harga Normal {formatRupiah(MAIN_PRODUCT_NORMAL_PRICE)}
               </p>
               <p className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-white/70">
                 Hari Ini Promo Launching
               </p>
               <p className="mt-1 text-[34px] font-black leading-tight text-[#ffd166]">
-                Rp149.900
+                {formatRupiah(MAIN_PRODUCT_PRICE)}
               </p>
+              <div className="mt-3 flex items-center justify-between gap-3 rounded-2xl border border-[#ffd166]/25 bg-[#ffd166]/10 px-3 py-2">
+                <span className="text-xs font-black uppercase tracking-[0.12em] text-[#ffd166]">
+                  Sisa promo
+                </span>
+                <span className="font-black text-white">{promoCountdown}</span>
+              </div>
               <p className="mt-2 text-sm font-bold text-white/70">
                 Akses lifetime - bukan langganan bulanan
               </p>
@@ -273,8 +316,9 @@ export function LandingPage() {
             Intinya: cukup sekali beli, koleksinya langsung jadi milik kamu.
           </p>
           <p className="mt-2 text-base leading-7 text-white/75">
-            Dari harga normal Rp299.900, sekarang promo launching hanya
-            Rp149.900.
+            Dari harga normal {formatRupiah(MAIN_PRODUCT_NORMAL_PRICE)},
+            sekarang promo launching hanya {formatRupiah(MAIN_PRODUCT_PRICE)}.
+            Hemat Rp100.000 kalau ambil hari ini.
           </p>
         </CopySection>
 
@@ -303,7 +347,9 @@ export function LandingPage() {
               <p className="text-sm font-bold text-white/70">
                 Harga promo bundle
               </p>
-              <p className="text-3xl font-black text-[#ffd166]">Rp149.900</p>
+              <p className="text-3xl font-black text-[#ffd166]">
+                {formatRupiah(MAIN_PRODUCT_PRICE)}
+              </p>
               <p className="mt-1 text-sm font-bold text-white/70">
                 Untuk 100+ komik digital
               </p>
@@ -352,10 +398,13 @@ export function LandingPage() {
               harga khusus add-on.
             </p>
             <p className="mt-2 text-sm text-white/55 line-through">
-              Harga Normal Rp149.900
+              Harga Normal {formatRupiah(ADDON_PRODUCT_NORMAL_PRICE)}
             </p>
             <p className="text-3xl font-black text-[#ffd166]">
-              Harga Add-On Hari Ini Rp99.900
+              Harga Add-On Hari Ini {formatRupiah(ADDON_PRODUCT_PRICE)}
+            </p>
+            <p className="mt-2 rounded-2xl border border-[#ffd166]/20 bg-[#ffd166]/10 p-3 text-sm font-black text-[#ffd166]">
+              Hemat Rp200.000 khusus saat checkout.
             </p>
             <p className="mt-3 leading-7 text-white/75">
               Tambahan 100+ video komik digital untuk melengkapi bundle utama
@@ -380,6 +429,35 @@ export function LandingPage() {
             <p className="mt-5 text-base font-black text-[#ffd166]">
               Bundle utama + add-on video = koleksi lebih lengkap.
             </p>
+          </div>
+        </section>
+
+        <section className="px-4 pt-8">
+          <div className="rounded-[28px] border border-[#ffd166]/40 bg-[#140a17] p-5 shadow-[0_0_30px_rgba(255,209,102,0.08)]">
+            <p className="text-sm font-black uppercase tracking-[0.18em] text-[#ffd166]">
+              Order bump VVIP
+            </p>
+            <h2 className="mt-2 text-2xl font-black">
+              VVIP Grup Tele Update Setiap Hari
+            </h2>
+            <p className="mt-3 leading-7 text-white/75">
+              Buat yang mau paling lengkap, kamu bisa tambah akses VVIP Tele
+              untuk update harian dan info koleksi tambahan.
+            </p>
+            <p className="mt-2 text-sm text-white/55 line-through">
+              Harga Normal {formatRupiah(VVIP_PRODUCT_NORMAL_PRICE)}
+            </p>
+            <p className="text-3xl font-black text-[#ffd166]">
+              Tambah Hari Ini {formatRupiah(VVIP_PRODUCT_PRICE)}
+            </p>
+            <p className="mt-2 rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-3 text-sm font-black text-emerald-100">
+              Hemat Rp200.000 kalau diambil bareng checkout sekarang.
+            </p>
+            <div className="mt-4 space-y-3">
+              {vvipItems.map(([title, body]) => (
+                <CopyPoint body={body} key={title} tone="success" title={title} />
+              ))}
+            </div>
           </div>
         </section>
 
@@ -476,7 +554,8 @@ export function LandingPage() {
               Rangkuman deal
             </p>
             <h2 className="mt-2 text-2xl font-black">
-              Jadi, Dengan Rp149.900 Kamu Dapat Ini Semua
+              Jadi, Dengan {formatRupiah(MAIN_PRODUCT_PRICE)} Kamu Dapat Ini
+              Semua
             </h2>
             <p className="mt-3 text-base leading-7 text-white/75">
               Sekali checkout, langsung ambil bundle komik digital fantasi
@@ -494,14 +573,24 @@ export function LandingPage() {
             </div>
             <div className="mt-5 rounded-3xl border border-white/10 bg-white/5 p-4">
               <p className="text-sm text-white/55 line-through">
-                Harga normal Rp299.900
+                Harga normal {formatRupiah(MAIN_PRODUCT_NORMAL_PRICE)}
               </p>
               <p className="mt-2 text-sm font-black uppercase tracking-[0.16em] text-white/70">
                 Promo Launching Hari Ini
               </p>
               <p className="mt-1 text-4xl font-black text-[#ffd166]">
-                Rp149.900
+                {formatRupiah(MAIN_PRODUCT_PRICE)}
               </p>
+              <div className="mt-3 grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-2xl border border-emerald-300/25 bg-emerald-400/10 p-3">
+                  <p className="text-white/60">Hemat hari ini</p>
+                  <p className="font-black text-emerald-100">Rp100.000</p>
+                </div>
+                <div className="rounded-2xl border border-[#ffd166]/25 bg-[#ffd166]/10 p-3">
+                  <p className="text-white/60">Sisa promo</p>
+                  <p className="font-black text-[#ffd166]">{promoCountdown}</p>
+                </div>
+              </div>
               <p className="mt-2 text-sm font-bold text-white/70">
                 Untuk 100+ koleksi digital dengan akses lifetime.
               </p>
@@ -518,7 +607,8 @@ export function LandingPage() {
 
       <div className="fixed bottom-0 left-0 z-40 w-screen max-w-[430px] border-t border-pink-300/20 bg-[#0d0610]/95 p-3 backdrop-blur sm:left-1/2 sm:-translate-x-1/2">
         <p className="mb-2 text-center text-xs font-bold text-[#ffd166]">
-          Promo launching Rp149.900 - Sekali bayar
+          Promo {formatRupiah(MAIN_PRODUCT_PRICE)} - Hemat Rp100.000 -{" "}
+          {promoCountdown}
         </p>
         <button
           className="h-14 w-full rounded-2xl bg-[#ff2f93] text-base font-black text-white shadow-[0_0_30px_rgba(255,47,147,0.5)]"
@@ -805,4 +895,11 @@ function ImageCard({
       />
     </div>
   );
+}
+
+function formatCountdown(seconds: number) {
+  const safeSeconds = Math.max(0, seconds);
+  const minutes = Math.floor(safeSeconds / 60);
+  const remainingSeconds = safeSeconds % 60;
+  return `${minutes}:${String(remainingSeconds).padStart(2, "0")}`;
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getOrderByExternalId, updateOrderByExternalId } from "@/lib/orders";
 import { sendAccessEmail } from "@/lib/email";
 import { sendMetaEvent } from "@/lib/meta";
+import { countOrderItems, describeOrder } from "@/lib/products";
 import {
   getExternalIdFromQrWebhook,
   getOrderExternalIdFromVirtualAccountWebhook,
@@ -69,6 +70,7 @@ export async function POST(request: Request) {
           to: order.email,
           externalId,
           includeAddon: order.include_addon,
+          includeVvip: order.include_vvip,
         });
 
         await updateOrderByExternalId(externalId, {
@@ -105,14 +107,18 @@ export async function POST(request: Request) {
           process.env.NEXT_PUBLIC_SITE_URL || "https://komikpilihanku.site"
         }/success?order=${encodeURIComponent(externalId)}`,
         customData: {
-          content_name: order.include_addon
-            ? "Komik Fantasi Digital + Video Add-on"
-            : "100+ Komik Fantasi Digital Pilihan 2026",
+          content_name: describeOrder({
+            includeAddon: order.include_addon,
+            includeVvip: order.include_vvip,
+          }),
           content_type: "product",
           currency: "IDR",
           value: order.amount,
           order_id: externalId,
-          num_items: order.include_addon ? 2 : 1,
+          num_items: countOrderItems({
+            includeAddon: order.include_addon,
+            includeVvip: order.include_vvip,
+          }),
         },
       });
     } catch (metaError) {

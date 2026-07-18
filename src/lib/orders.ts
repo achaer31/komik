@@ -19,6 +19,7 @@ export type OrderRecord = {
   external_id: string;
   email: string;
   include_addon: boolean;
+  include_vvip: boolean;
   amount: number;
   status: PublicOrderStatus;
   payment_method?: string | null;
@@ -57,7 +58,12 @@ export type AdminOrdersSnapshot = Awaited<ReturnType<typeof getAdminOrdersSnapsh
 
 type OrderInsert = Pick<
   OrderRecord,
-  "external_id" | "email" | "include_addon" | "amount" | "status"
+  | "external_id"
+  | "email"
+  | "include_addon"
+  | "include_vvip"
+  | "amount"
+  | "status"
 >;
 
 type OrderUpdate = Partial<
@@ -96,7 +102,7 @@ type OrderUpdate = Partial<
 >;
 
 const ADMIN_ORDER_COLUMNS =
-  "id,external_id,email,include_addon,amount,status,payment_method,payment_channel,xendit_payment_id,xendit_reference_id,qris_expires_at,va_account_number,va_bank_code,va_expires_at,paid_at,email_sent_at,email_status,email_message_id,invoice_email_message_id,invoice_email_sent_at,access_email_message_id,access_email_sent_at,email_processed_at,email_delivered_at,email_opened_at,email_clicked_at,email_bounced_at,email_failed_at,email_complained_at,email_last_event_at,email_last_event,email_error,created_at,updated_at";
+  "id,external_id,email,include_addon,include_vvip,amount,status,payment_method,payment_channel,xendit_payment_id,xendit_reference_id,qris_expires_at,va_account_number,va_bank_code,va_expires_at,paid_at,email_sent_at,email_status,email_message_id,invoice_email_message_id,invoice_email_sent_at,access_email_message_id,access_email_sent_at,email_processed_at,email_delivered_at,email_opened_at,email_clicked_at,email_bounced_at,email_failed_at,email_complained_at,email_last_event_at,email_last_event,email_error,created_at,updated_at";
 
 function getSupabase() {
   const { serviceKey, url } = getSupabaseConfig();
@@ -122,6 +128,8 @@ function getSupabaseConfig() {
 function normalizeOrder(order: Record<string, unknown>): OrderRecord {
   return {
     ...(order as OrderRecord),
+    include_addon: Boolean(order.include_addon),
+    include_vvip: Boolean(order.include_vvip),
     status: publicStatus(order.status as string | undefined),
     email_status: normalizeEmailStatus(order.email_status as string | undefined),
   };

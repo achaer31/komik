@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { SuccessPurchaseTracker } from "@/components/SuccessPurchaseTracker";
 import { getOrderByExternalId } from "@/lib/orders";
+import { describeOrder } from "@/lib/products";
 
 export const dynamic = "force-dynamic";
 
@@ -20,6 +21,7 @@ export default async function SuccessPage({
           amount={order.amount}
           email={order.email}
           includeAddon={order.include_addon}
+          includeVvip={order.include_vvip}
           orderId={order.external_id}
         />
       ) : null}
@@ -34,8 +36,11 @@ export default async function SuccessPage({
         </p>
         <div className="mt-5 rounded-2xl bg-white/5 p-4 text-left text-sm text-white/70">
           Paket:{" "}
-          {order?.include_addon
-            ? "100+ Komik Fantasi + 100+ Video Komik"
+          {order
+            ? describeOrder({
+                includeAddon: order.include_addon,
+                includeVvip: order.include_vvip,
+              })
             : "100+ Komik Fantasi Digital Pilihan 2026"}
         </div>
         <Link

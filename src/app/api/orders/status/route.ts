@@ -19,6 +19,7 @@ export async function GET(request: Request) {
       external_id: order.external_id,
       amount: order.amount,
       includeAddon: order.include_addon,
+      includeVvip: order.include_vvip,
       status: order.status,
       emailSent: Boolean(order.email_sent_at),
     });

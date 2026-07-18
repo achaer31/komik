@@ -2,12 +2,14 @@
 
 import { useEffect } from "react";
 import { trackMetaEvent } from "@/lib/meta-client";
+import { countOrderItems, describeOrder } from "@/lib/products";
 
 type SuccessPurchaseTrackerProps = {
   orderId: string;
   email: string;
   amount: number;
   includeAddon: boolean;
+  includeVvip: boolean;
 };
 
 export function SuccessPurchaseTracker({
@@ -15,6 +17,7 @@ export function SuccessPurchaseTracker({
   email,
   amount,
   includeAddon,
+  includeVvip,
 }: SuccessPurchaseTrackerProps) {
   useEffect(() => {
     if (!orderId) return;
@@ -22,19 +25,17 @@ export function SuccessPurchaseTracker({
     void trackMetaEvent(
       "Purchase",
       {
-        content_name: includeAddon
-          ? "Komik Fantasi Digital + Video Add-on"
-          : "100+ Komik Fantasi Digital Pilihan 2026",
+        content_name: describeOrder({ includeAddon, includeVvip }),
         content_type: "product",
         currency: "IDR",
         value: amount,
         order_id: orderId,
-        num_items: includeAddon ? 2 : 1,
+        num_items: countOrderItems({ includeAddon, includeVvip }),
       },
       email,
       `purchase_${orderId}`,
     );
-  }, [amount, email, includeAddon, orderId]);
+  }, [amount, email, includeAddon, includeVvip, orderId]);
 
   return null;
 }

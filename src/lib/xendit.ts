@@ -54,6 +54,7 @@ export async function createDynamicQrisPayment(params: {
   amount: number;
   email: string;
   includeAddon?: boolean;
+  includeVvip?: boolean;
 }) {
   const expiresAt = new Date(Date.now() + 10 * 60 * 1000).toISOString();
   const body = {
@@ -65,6 +66,7 @@ export async function createDynamicQrisPayment(params: {
     metadata: {
       email: params.email,
       includeAddon: params.includeAddon ? "true" : "false",
+      includeVvip: params.includeVvip ? "true" : "false",
     },
   };
 

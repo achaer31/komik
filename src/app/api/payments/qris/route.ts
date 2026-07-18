@@ -30,6 +30,7 @@ export async function POST(request: Request) {
       amount: order.amount,
       email: order.email,
       includeAddon: order.include_addon,
+      includeVvip: order.include_vvip,
     });
 
     await updateOrderByExternalId(order.external_id, {
