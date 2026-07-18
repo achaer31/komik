@@ -1,3 +1,20 @@
+create table if not exists public.orders (
+  id uuid primary key default gen_random_uuid(),
+  external_id text unique not null,
+  email text not null,
+  include_addon boolean not null default false,
+  amount integer not null,
+  status text not null default 'PENDING',
+  xendit_payment_id text,
+  xendit_reference_id text,
+  qris_payload jsonb,
+  qris_expires_at timestamptz,
+  paid_at timestamptz,
+  email_sent_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 alter table public.orders
   add column if not exists email_status text not null default 'NOT_SENT',
   add column if not exists email_message_id text,

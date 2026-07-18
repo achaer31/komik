@@ -53,6 +53,8 @@ export type OrderRecord = {
   updated_at?: string;
 };
 
+export type AdminOrdersSnapshot = Awaited<ReturnType<typeof getAdminOrdersSnapshot>>;
+
 type OrderInsert = Pick<
   OrderRecord,
   "external_id" | "email" | "include_addon" | "amount" | "status"
@@ -93,7 +95,18 @@ type OrderUpdate = Partial<
   >
 >;
 
+const ADMIN_ORDER_COLUMNS =
+  "id,external_id,email,include_addon,amount,status,payment_method,payment_channel,xendit_payment_id,xendit_reference_id,qris_expires_at,va_account_number,va_bank_code,va_expires_at,paid_at,email_sent_at,email_status,email_message_id,invoice_email_message_id,invoice_email_sent_at,access_email_message_id,access_email_sent_at,email_processed_at,email_delivered_at,email_opened_at,email_clicked_at,email_bounced_at,email_failed_at,email_complained_at,email_last_event_at,email_last_event,email_error,created_at,updated_at";
+
 function getSupabase() {
+  const { serviceKey, url } = getSupabaseConfig();
+
+  return createClient(url, serviceKey, {
+    auth: { persistSession: false },
+  });
+}
+
+function getSupabaseConfig() {
   const url = process.env.SUPABASE_URL;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -103,9 +116,7 @@ function getSupabase() {
     );
   }
 
-  return createClient(url, serviceKey, {
-    auth: { persistSession: false },
-  });
+  return { serviceKey, url };
 }
 
 function normalizeOrder(order: Record<string, unknown>): OrderRecord {
@@ -170,15 +181,79 @@ export async function updateOrderByExternalId(
 }
 
 export async function listAdminOrders() {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("orders")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(500);
+  const rows: Record<string, unknown>[] = [];
+  const errors: string[] = [];
 
-  if (error) throw new Error(error.message);
-  return (data ?? []).map(normalizeOrder);
+  for (const status of ["PENDING", "PAID", "EXPIRED", "FAILED"] as const) {
+    try {
+      rows.push(...(await fetchAdminOrderRows(status)));
+    } catch (error) {
+      errors.push(
+        `${status}: ${
+          error instanceof Error ? error.message : "Gagal memuat order"
+        }`,
+      );
+    }
+  }
+
+  if (rows.length === 0 && errors.length > 0) {
+    throw new Error(errors.join("; "));
+  }
+
+  return rows
+    .map(normalizeOrder)
+    .sort((a, b) =>
+      (b.created_at ?? "").localeCompare(a.created_at ?? ""),
+    );
+}
+
+async function fetchAdminOrderRows(status: PublicOrderStatus) {
+  const { serviceKey, url } = getSupabaseConfig();
+  const requestUrl = new URL("/rest/v1/orders", url);
+  requestUrl.searchParams.set("select", ADMIN_ORDER_COLUMNS);
+  requestUrl.searchParams.set("status", `eq.${status}`);
+  requestUrl.searchParams.set("limit", "50");
+
+  const response = await withSupabaseRetry(() =>
+    fetch(requestUrl.toString(), {
+      cache: "no-store",
+      headers: {
+        apikey: serviceKey,
+        authorization: `Bearer ${serviceKey}`,
+      },
+    }),
+  );
+
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    throw new Error(`REST ${response.status} ${detail}`.trim());
+  }
+
+  return (await response.json()) as Record<string, unknown>[];
+}
+
+async function withSupabaseRetry<T>(
+  operation: () => PromiseLike<T>,
+  maxAttempts = 3,
+) {
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      if (attempt === maxAttempts || !isRetryableFetchError(error)) break;
+      await new Promise((resolve) => setTimeout(resolve, 200 * attempt));
+    }
+  }
+
+  throw lastError;
+}
+
+function isRetryableFetchError(error: unknown) {
+  if (!(error instanceof Error)) return false;
+  return /fetch failed|network|timeout|econnreset|etimedout/i.test(error.message);
 }
 
 export async function getAdminOrdersSnapshot() {
